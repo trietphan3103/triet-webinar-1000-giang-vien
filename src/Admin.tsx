@@ -29,7 +29,7 @@ interface SubmitLog {
 type Tab = 'users' | 'submit-logs' | 'analytics' | 'email-templates'
 
 interface EmailTemplate {
-  id: number; name: string; sender_name?: string; subject: string; body: string; is_active: boolean
+  id: number; name: string; subject: string; body: string; is_active: boolean
   created_at?: string; updated_at?: string
 }
 
@@ -589,12 +589,6 @@ function TemplateForm({ form, onChange }: { form: Partial<EmailTemplate>; onChan
             placeholder="Email 1 - Chào mừng"
             className="w-full border border-slate-200 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400" />
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Tên người gửi</label>
-          <input value={form.sender_name ?? ''} onChange={e => onChange({ ...form, sender_name: e.target.value })}
-            placeholder="Khánh Hùng Academy"
-            className="w-full border border-slate-200 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400" />
-        </div>
       </div>
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Tiêu đề email (Subject) <span className="text-red-400">*</span></label>
@@ -725,7 +719,7 @@ function EmailTemplatesTab() {
   useEffect(() => { load() }, [load])
 
   function openCreate() { setForm({ name: '', subject: '', body: '', is_active: true }); setModal('create') }
-  function openEdit(t: EmailTemplate) { setForm({ name: t.name, sender_name: t.sender_name, subject: t.subject, body: t.body, is_active: t.is_active }); setModal({ edit: t }) }
+  function openEdit(t: EmailTemplate) { setForm({ name: t.name, subject: t.subject, body: t.body, is_active: t.is_active }); setModal({ edit: t }) }
 
   async function handleSave() {
     setSaving(true)
