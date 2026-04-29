@@ -725,7 +725,7 @@ function EmailTemplatesTab() {
   useEffect(() => { load() }, [load])
 
   function openCreate() { setForm({ name: '', subject: '', body: '', is_active: true }); setModal('create') }
-  function openEdit(t: EmailTemplate) { setForm({ name: t.name, subject: t.subject, body: t.body, is_active: t.is_active }); setModal({ edit: t }) }
+  function openEdit(t: EmailTemplate) { setForm({ name: t.name, sender_name: t.sender_name, subject: t.subject, body: t.body, is_active: t.is_active }); setModal({ edit: t }) }
 
   async function handleSave() {
     setSaving(true)
