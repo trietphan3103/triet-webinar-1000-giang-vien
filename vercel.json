@@ -5,6 +5,7 @@
     { "source": "/api/submit", "destination": "/api/submit" },
     { "source": "/api/analytics/pixel", "destination": "/api/analytics/pixel" },
     { "source": "/api/analytics/ads", "destination": "/api/analytics/ads" },
+    { "source": "/api/broadcast", "destination": "/api/broadcast" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
