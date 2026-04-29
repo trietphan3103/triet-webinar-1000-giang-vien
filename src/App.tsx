@@ -5,17 +5,268 @@ declare global {
   interface Window { fbq?: (...args: unknown[]) => void }
 }
 
+const VIDEO_PLAY_EVENT = 'vp:play'
+
+function formatTime(s: number) {
+  if (!s || isNaN(s)) return '0:00'
+  const m = Math.floor(s / 60)
+  const sec = Math.floor(s % 60)
+  return `${m}:${sec.toString().padStart(2, '0')}`
+}
+
+function VideoPlayer({ src, poster }: { src: string; poster?: string }) {
+  const [playing, setPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [muted, setMuted] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
+  const idRef = useRef(Math.random().toString(36).slice(2))
+
+  useEffect(() => {
+    function onOtherPlay(e: Event) {
+      const { id } = (e as CustomEvent<{ id: string }>).detail
+      if (id !== idRef.current && videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause()
+      }
+    }
+    window.addEventListener(VIDEO_PLAY_EVENT, onOtherPlay)
+    return () => window.removeEventListener(VIDEO_PLAY_EVENT, onOtherPlay)
+  }, [])
+
+  function togglePlay() {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) {
+      window.dispatchEvent(new CustomEvent(VIDEO_PLAY_EVENT, { detail: { id: idRef.current } }))
+      videoRef.current.play()
+    } else {
+      videoRef.current.pause()
+    }
+  }
+
+  function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!progressRef.current || !videoRef.current || !duration) return
+    const rect = progressRef.current.getBoundingClientRect()
+    videoRef.current.currentTime = ((e.clientX - rect.left) / rect.width) * duration
+  }
+
+  function handleFullscreen() {
+    videoRef.current?.requestFullscreen?.()
+  }
+
+  function toggleMute() {
+    if (!videoRef.current) return
+    videoRef.current.muted = !muted
+    setMuted(!muted)
+  }
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0
+
+  return (
+    <div className="relative w-full h-full bg-black select-none">
+      <video
+        ref={videoRef}
+        className="w-full h-full object-cover cursor-pointer"
+        preload="metadata"
+        poster={poster}
+        src={src}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+        onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
+        onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
+        onClick={togglePlay}
+      />
+
+      {/* Center play button — shown when paused */}
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-xl shadow-accent/40 group-hover:scale-110 transition-transform" style={{background:'rgba(255,45,111,0.92)'}}>
+            <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* Controls bar — only when playing */}
+      {playing && (
+        <div className="absolute bottom-0 left-0 right-0 px-3 pt-4 pb-2.5" style={{background:'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)'}}>
+          <div ref={progressRef} className="w-full h-1 rounded-full mb-2.5 cursor-pointer" style={{background:'rgba(255,255,255,0.3)'}} onClick={handleProgressClick}>
+            <div className="h-full rounded-full relative transition-[width]" style={{width:`${progress}%`, background:'#fff'}}>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <button onClick={togglePlay} className="text-white/90 hover:text-white transition p-0.5">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              </button>
+              <span className="text-white text-xs font-semibold tabular-nums leading-none">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={toggleMute} className="text-white/90 hover:text-white transition p-0.5">
+                {muted
+                  ? <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                  : <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                }
+              </button>
+              <button onClick={handleFullscreen} className="text-white/90 hover:text-white transition p-0.5">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function getCookie(name: string) {
   return document.cookie.split(';').map(c => c.trim())
     .find(c => c.startsWith(name + '='))?.split('=')[1] || undefined
 }
 
-function validateForm(data: { hoten: string; sdt: string; email: string; chuyenmon: string }) {
+function validateForm(data: { hoten: string; sdt: string; email: string; chuyenmon: string; camket: boolean }) {
   const errs: Record<string, string> = {}
   if (!data.hoten.trim()) errs.hoten = 'Vui lòng nhập họ tên'
-  if (!/^(0[3-9][0-9]{8})$/.test(data.sdt.replace(/\s/g, ''))) errs.sdt = 'Số điện thoại không hợp lệ'
+  if (!/^(0[3-9][0-9]{8})$/.test(data.sdt.replace(/\s/g, ''))) errs.sdt = 'Số điện thoại không hợp lệ (VD: 0901234567)'
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) errs.email = 'Email không hợp lệ'
+  if (!data.chuyenmon.trim()) errs.chuyenmon = 'Vui lòng điền vào ô này'
+  if (!data.camket) errs.camket = 'Vui lòng xác nhận cam kết'
   return errs
+}
+
+function WebinarForm({ onSuccess }: { onSuccess: () => void }) {
+  const [form, setForm] = useState({ hoten: '', sdt: '', email: '', chuyenmon: '', camket: false })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const errs = validateForm(form)
+    if (Object.keys(errs).length) { setErrors(errs); return }
+    setErrors({})
+    setSubmitting(true)
+    const eventId = `lead-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    try {
+      const res = await fetch('/api/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hoten: form.hoten,
+          sdt: form.sdt,
+          email: form.email,
+          chuyenmon: form.chuyenmon,
+          eventId,
+          fbc: getCookie('_fbc'),
+          fbp: getCookie('_fbp'),
+          userAgent: navigator.userAgent,
+        }),
+      })
+      if (res.ok) {
+        window.fbq?.('trackCustom', 'WebinarFormSubmit', {}, { eventID: eventId })
+        onSuccess()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Có lỗi xảy ra, vui lòng thử lại')
+      }
+    } catch {
+      alert('Không thể kết nối, vui lòng thử lại')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="bg-paper text-ink rounded-3xl p-7 md:p-10 shadow-2xl space-y-5">
+
+      {/* Họ và tên */}
+      <div>
+        <label htmlFor="hoten" className="block text-[11px] font-bold uppercase tracking-widest text-ink mb-2">Họ và tên <span className="text-accent">*</span></label>
+        <input id="hoten" name="hoten" type="text" placeholder="VD: Nguyễn Văn A"
+          value={form.hoten} onChange={e => { setForm(f => ({...f, hoten: e.target.value})); setErrors(v => ({...v, hoten:''})) }}
+          className={`w-full px-4 py-3 border rounded-lg text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 transition ${errors.hoten ? 'border-red-400 bg-red-50/30 focus:ring-red-200' : 'bg-line/25 border-line focus:border-accent focus:ring-accent/20'}`} />
+        <AnimatePresence>
+          {errors.hoten && <motion.p initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="text-red-500 text-xs mt-1.5 ml-1 font-medium">{errors.hoten}</motion.p>}
+        </AnimatePresence>
+      </div>
+
+      {/* SĐT + Email */}
+      <div className="grid md:grid-cols-2 gap-5">
+        <div>
+          <label htmlFor="sdt" className="block text-[11px] font-bold uppercase tracking-widest text-ink mb-2">Số điện thoại (Zalo) <span className="text-accent">*</span></label>
+          <input id="sdt" name="sdt" type="tel" placeholder="VD: 0901 234 567"
+            value={form.sdt} onChange={e => { setForm(f => ({...f, sdt: e.target.value})); setErrors(v => ({...v, sdt:''})) }}
+            className={`w-full px-4 py-3 border rounded-lg text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 transition ${errors.sdt ? 'border-red-400 bg-red-50/30 focus:ring-red-200' : 'bg-line/25 border-line focus:border-accent focus:ring-accent/20'}`} />
+          <AnimatePresence>
+            {errors.sdt && <motion.p initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="text-red-500 text-xs mt-1.5 ml-1 font-medium">{errors.sdt}</motion.p>}
+          </AnimatePresence>
+          {!errors.sdt && <p className="text-xs text-ink/80 mt-2 pl-1">Số Zalo đang dùng — team nhắc lịch & gửi link qua đây.</p>}
+        </div>
+        <div>
+          <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-widest text-ink mb-2">Email <span className="text-accent">*</span></label>
+          <input id="email" name="email" type="email" placeholder="email-chinh@gmail.com"
+            value={form.email} onChange={e => { setForm(f => ({...f, email: e.target.value})); setErrors(v => ({...v, email:''})) }}
+            className={`w-full px-4 py-3 border rounded-lg text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 transition ${errors.email ? 'border-red-400 bg-red-50/30 focus:ring-red-200' : 'bg-line/25 border-line focus:border-accent focus:ring-accent/20'}`} />
+          <AnimatePresence>
+            {errors.email && <motion.p initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="text-red-500 text-xs mt-1.5 ml-1 font-medium">{errors.email}</motion.p>}
+          </AnimatePresence>
+          {!errors.email && <p className="text-xs text-ink/80 mt-2 pl-1">Email nhận link Zoom + bộ 3 tài liệu sau live.</p>}
+        </div>
+      </div>
+
+      {/* Chuyên môn */}
+      <div>
+        <label htmlFor="chuyenmon" className="block text-[11px] font-bold uppercase tracking-widest text-ink mb-2">Hiện đang dạy gì / muốn dạy gì? <span className="text-accent">*</span></label>
+        <input id="chuyenmon" name="chuyenmon" type="text" placeholder="VD: Đang dạy lớp luyện thi IELTS / Muốn làm khoá kế toán cho SME"
+          maxLength={160}
+          value={form.chuyenmon} onChange={e => { setForm(f => ({...f, chuyenmon: e.target.value})); setErrors(v => ({...v, chuyenmon:''})) }}
+          className={`w-full px-4 py-3 border rounded-lg text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 transition ${errors.chuyenmon ? 'border-red-400 bg-red-50/30 focus:ring-red-200' : 'bg-line/25 border-line focus:border-accent focus:ring-accent/20'}`} />
+        {!errors.chuyenmon && <p className="text-xs text-ink/80 mt-2 pl-1">Một dòng — để Triết biết anh chị là ai trước khi vào.</p>}
+        <AnimatePresence>
+          {errors.chuyenmon && <motion.p initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="text-red-500 text-xs mt-1.5 ml-1 font-medium">{errors.chuyenmon}</motion.p>}
+        </AnimatePresence>
+      </div>
+
+      {/* Cam kết */}
+      <div>
+        <label className={`flex items-start gap-3 p-4 rounded-2xl cursor-pointer transition ${errors.camket ? 'bg-red-50 border border-red-300' : 'bg-cream'}`}>
+          <input type="checkbox"
+            checked={form.camket}
+            onChange={e => { setForm(f => ({...f, camket: e.target.checked})); setErrors(v => ({...v, camket:''})) }}
+            className="mt-0.5 w-5 h-5 accent-pink-600 shrink-0" />
+          <span className="text-sm leading-relaxed text-ink">
+            <strong>Tôi cam kết tham dự đủ webinar.</strong> Tôi hiểu Triết không bán giấc mơ — tôi tới để nhận hết và làm thật.
+          </span>
+        </label>
+        <AnimatePresence>
+          {errors.camket && <motion.p initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="text-red-500 text-xs mt-1.5 ml-1 font-medium">{errors.camket}</motion.p>}
+        </AnimatePresence>
+      </div>
+
+      {/* CTA */}
+      <button type="submit" disabled={submitting}
+        className="w-full btn-cta bg-accent hover:bg-accent-dark disabled:opacity-60 text-paper text-lg px-8 py-4 rounded-lg transition shadow-lg shadow-accent/30 hover:scale-[1.01]">
+        {submitting ? 'Đang đăng ký...' : 'ĐĂNG KÝ GIỮ CHỖ NGAY →'}
+      </button>
+
+      {/* Bonus block */}
+      <div className="p-5 bg-cream border-l-4 border-accent rounded-2xl">
+        <div className="text-[11px] font-bold uppercase tracking-widest text-accent mb-3">Bộ 3 tài liệu gửi sau live — chỉ cho người ngồi đủ 60 phút</div>
+        <ul className="space-y-2">
+          <li className="text-sm text-ink leading-relaxed"><span className="text-accent font-bold mr-1">→</span><strong>Template đóng gói chuyên môn</strong> — 1 trang, điền xong là ra outline + định giá</li>
+          <li className="text-sm text-ink leading-relaxed"><span className="text-accent font-bold mr-1">→</span><strong>Checklist thẩm định MONA</strong> — tự check case của mình có win không, trước khi bắt đầu</li>
+          <li className="text-sm text-ink leading-relaxed"><span className="text-accent font-bold mr-1">→</span><strong>Roadmap 21 ngày ra đơn đầu tiên</strong> — từng bước, không cần tư vấn thêm</li>
+        </ul>
+        <p className="text-xs font-semibold text-ink/70 mt-3">⚠ Người không tham dự live sẽ không nhận được bộ tài liệu này.</p>
+      </div>
+
+      <p className="text-xs text-ink/70 text-center font-medium">Webinar miễn phí · Slot có hạn — đủ là đóng form · Thông tin được bảo mật, không gửi bên thứ ba.</p>
+    </form>
+  )
 }
 
 const WEBINAR_DATE = new Date('2026-05-09T20:00:00+07:00')
@@ -74,8 +325,8 @@ function SuccessPopup() {
         transition={{type:'spring',stiffness:300,damping:25}}
       >
         {/* Icon */}
-        <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-5">
-          <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5" style={{background:'rgba(255,45,111,0.1)'}}>
+          <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{color:'#FF2D6F'}}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
         </div>
@@ -93,8 +344,8 @@ function SuccessPopup() {
           target="_blank"
           rel="noreferrer"
           onClick={() => setClicked(true)}
-          className="flex items-center justify-center gap-2 w-full text-white font-bold text-base px-6 py-4 rounded-full transition hover:opacity-90"
-          style={{background:'#0068FF'}}
+          className="btn-cta flex items-center justify-center gap-2 w-full text-paper font-bold text-base px-6 py-4 rounded-lg transition shadow-lg shadow-accent/30 hover:opacity-90 hover:scale-[1.01]"
+          style={{background:'#FF2D6F'}}
         >
           Tham gia nhóm Zalo nhận tài liệu
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -112,7 +363,7 @@ function SuccessPopup() {
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full rounded-full"
-                  style={{background:'#0068FF'}}
+                  style={{background:'#FF2D6F'}}
                   initial={{width:'100%'}}
                   animate={{width:'0%'}}
                   transition={{duration:5,ease:'linear'}}
@@ -129,9 +380,6 @@ function SuccessPopup() {
 export default function App() {
   const countdown = useCountdown()
   const { lb, open: openLightbox, close: closeLightbox } = useLightbox()
-  const [form, setForm] = useState({ hoten: '', sdt: '', email: '', chuyenmon: '', camket: false })
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [submitting, setSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
   // Meta Pixel
@@ -152,44 +400,44 @@ export default function App() {
       s = b.getElementsByTagName(e)[0]; s.parentNode?.insertBefore(t, s)
     })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
     window.fbq?.('init', pixelId)
-    window.fbq?.('track', 'PageView')
+    window.fbq?.('trackCustom', 'WebinarPageView')
   }, [])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const errs = validateForm(form)
-    if (Object.keys(errs).length) { setErrors(errs); return }
-    setErrors({})
-    setSubmitting(true)
-    const eventId = `lead-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    try {
-      const res = await fetch('/api/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hoten: form.hoten,
-          sdt: form.sdt,
-          email: form.email,
-          chuyenmon: form.chuyenmon,
-          eventId,
-          fbc: getCookie('_fbc'),
-          fbp: getCookie('_fbp'),
-          userAgent: navigator.userAgent,
-        }),
-      })
-      if (res.ok) {
-        window.fbq?.('track', 'Lead', {}, { eventID: eventId })
-        setShowSuccess(true)
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Có lỗi xảy ra, vui lòng thử lại')
+  // Scroll depth tracking
+  useEffect(() => {
+    const fired = new Set<number>()
+    const thresholds = [25, 50, 75, 90]
+    function onScroll() {
+      const el = document.documentElement
+      const pct = Math.round((el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100)
+      for (const t of thresholds) {
+        if (pct >= t && !fired.has(t)) {
+          fired.add(t)
+          window.fbq?.('trackCustom', `WebinarViewContentScroll${t}`)
+        }
       }
-    } catch {
-      alert('Không thể kết nối, vui lòng thử lại')
-    } finally {
-      setSubmitting(false)
     }
-  }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Time on site tracking
+  useEffect(() => {
+    const fired = new Set<number>()
+    const milestones = [30, 60, 120]
+    const start = Date.now()
+    const id = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - start) / 1000)
+      for (const s of milestones) {
+        if (elapsed >= s && !fired.has(s)) {
+          fired.add(s)
+          window.fbq?.('trackCustom', `WebinarTimeOnSite${s}s`)
+        }
+      }
+      if (fired.size === milestones.length) clearInterval(id)
+    }, 5000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
     <>
@@ -261,7 +509,7 @@ export default function App() {
           Cậu em <strong className="font-black">22 tuổi (sinh 2004)</strong> — không fanpage, không nhân viên, không nổi tiếng.
         </p>
         <p className="text-sm md:text-base leading-relaxed">
-          Không có gì cả — ngoài <strong className="font-black">1 công thức Triết trao</strong>.
+          Không có gì cả — ngoài <strong className="font-black">1 công thức Triết sẽ chia sẻ trong webinar này</strong>.
         </p>
         <p className="text-sm md:text-base leading-relaxed">
           Kết quả: <strong className="font-black">trăm mấy triệu/tháng đều đều 8 tháng · tổng 1 tỷ · tự động 100%</strong>.
@@ -369,8 +617,8 @@ export default function App() {
       <div className="mb-10">
         <div className="sect-label text-accent mb-4">Không phải hứa hẹn — là kết quả thật</div>
         <h2 className="font-black leading-tight text-ink">
-          582 case · 487 win · 84% tỉ lệ thắng.<br />
-          <span className="text-accent">Dưới đây là những người thật.</span>
+          582 case · 487 win · 84% tỉ lệ thắng<br />
+          <span className="text-accent">Dưới đây là những người thật</span>
         </h2>
       </div>
       <div className="hof-row mb-3">
@@ -395,7 +643,7 @@ export default function App() {
       <div className="mb-8">
         <div className="sect-label text-accent mb-4">Số liệu được lấy trực tiếp từ hệ thống GMV của MONA E-Learning · realtime</div>
         <h2 className="font-black leading-tight text-paper">
-          Số liệu thật. Win thật. Chia sẻ hết — không giấu diếm.
+          Số liệu thật. Win thật. Chia sẻ hết — không giấu diếm
         </h2>
       </div>
 
@@ -436,8 +684,8 @@ export default function App() {
       <div className="mb-10">
         <div className="sect-label text-accent mb-4">Anh chị sẽ về với</div>
         <h2 className="font-black leading-tight text-ink">
-          2 tiếng — không lý thuyết.<br />
-          <span className="text-accent">Toàn công thức thật, case thật, số thật.</span>
+          2 tiếng — không lý thuyết<br />
+          <span className="text-accent">Công thức thật, case thật, số thật</span>
         </h2>
       </div>
 
@@ -502,8 +750,8 @@ export default function App() {
       <div>
         <div className="sect-label text-accent mb-4">Lần này khác</div>
         <h2 className="font-black leading-tight text-paper">
-          Không phải webinar nghe chơi.<br />
-          Là <span className="marker">trao cờ tận tay</span> — về là phất.
+          Không phải webinar nghe chơi<br />
+          Là <span className="marker">trao cờ tận tay</span> — về là phất
         </h2>
         <div className="mt-5 max-w-3xl space-y-4 text-lg text-paper leading-relaxed">
           <p>Webinar thường chỉ đủ để anh chị biết mình đang kẹt — nhưng không biết tháo gỡ từ đâu.</p>
@@ -549,8 +797,8 @@ export default function App() {
       <div>
         <div className="sect-label text-accent mb-4">Cơ hội duy nhất 2026</div>
         <h2 className="font-black leading-tight text-ink">
-          Mục tiêu năm nay: <span className="text-accent">1.000 giảng viên thắng.</span><br />
-          Đủ 1000 — Triết <span className="marker">DỪNG.</span>
+          Mục tiêu năm nay: <span className="text-accent">1.000 giảng viên thắng</span><br />
+          Đủ 1000 — Triết <span className="marker">DỪNG</span>
         </h2>
 
         <div className="mt-6 max-w-3xl space-y-4 text-lg md:text-xl text-ink leading-relaxed">
@@ -635,17 +883,13 @@ export default function App() {
         </div>
       </div>
 
-      {/* 2 videos side by side with native controls */}
+      {/* 2 videos side by side — click to play */}
       <div className="mt-8 grid md:grid-cols-2 gap-4">
         <div className="rounded-2xl overflow-hidden shadow-xl bg-black" style={{aspectRatio:"16/9"}}>
-          <video className="w-full h-full" controls preload="metadata">
-            <source src="https://pub-07ad3629735a49be95ca2ba6633eb552.r2.dev/fb-video-1.mp4" type="video/mp4" />
-          </video>
+          <VideoPlayer src="https://pub-07ad3629735a49be95ca2ba6633eb552.r2.dev/fb-video-1.mp4" />
         </div>
         <div className="rounded-2xl overflow-hidden shadow-xl bg-black" style={{aspectRatio:"16/9"}}>
-          <video className="w-full h-full" controls preload="metadata">
-            <source src="https://pub-07ad3629735a49be95ca2ba6633eb552.r2.dev/fb-video-2.mp4" type="video/mp4" />
-          </video>
+          <VideoPlayer src="https://pub-07ad3629735a49be95ca2ba6633eb552.r2.dev/fb-video-2.mp4" />
         </div>
       </div>
 
@@ -676,7 +920,7 @@ export default function App() {
     <div className="max-w-6xl mx-auto px-4 py-20 md:py-32">
       <div>
         <h2 className="font-black leading-tight">
-          Webinar này — cho ai, không cho ai.
+          Webinar này — cho ai, không cho ai
         </h2>
         <p className="mt-4 text-lg text-ink">Hãy vào nghe chỉ và chỉ nếu anh chị <strong>sẵn sàng</strong>.</p>
       </div>
@@ -718,9 +962,10 @@ export default function App() {
     <div className="absolute inset-0 pointer-events-none" style={{backgroundImage:"linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px)",backgroundSize:"48px 48px"}}></div>
     <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-32">
       <div>
-        <div className="sect-label text-accent mb-4">Triết đập thẳng</div>
+
         <h2 className="font-black leading-tight text-paper">
-          Anh chị đang nghĩ gì? Triết trả lời trước.
+          Anh chị đang nghĩ gì?<br />
+          <span className="text-accent">Triết trả lời trước</span>
         </h2>
       </div>
 
@@ -785,7 +1030,7 @@ export default function App() {
             </div>
             <span className="text-paper group-open:rotate-180 transition shrink-0">▼</span>
           </summary>
-          <div className="px-5 md:px-6 pb-6 pl-14 md:pl-16 text-ink leading-relaxed space-y-3">
+          <div className="px-5 md:px-6 pb-6 pl-14 md:pl-16 text-paper leading-relaxed space-y-3">
             <p>582 case của Triết chứng minh điều ngược lại. Nguyên xi từ danh sách:</p>
             <ul className="space-y-1.5 text-sm">
               <li className="flex gap-2"><span className="text-accent font-bold shrink-0">→</span> Dạy <strong>hát karaoke</strong> — ra tiền.</li>
@@ -807,8 +1052,8 @@ export default function App() {
       <div className="mb-10">
         <div className="sect-label text-accent mb-4">Những anh chị đi trước nói gì</div>
         <h2 className="font-black leading-tight text-ink testimonials-h2">
-          NGƯỜI THẬT — VIỆC THẬT — CÂU CHUYỆN THẬT.<br />
-          <span className="text-accent">WIN ĐỦ ĐƯỜNG — ĐỦ KIỂU — ĐỦ GIAI ĐOẠN KINH DOANH.</span>
+          NGƯỜI THẬT — VIỆC THẬT — CÂU CHUYỆN THẬT<br />
+          <span className="text-accent">WIN ĐỦ ĐƯỜNG — ĐỦ KIỂU — ĐỦ GIAI ĐOẠN KINH DOANH</span>
         </h2>
       </div>
 
@@ -911,7 +1156,7 @@ export default function App() {
         </div>
         <h2 className="font-black leading-tight text-paper">
           Đăng ký — nhận ngay<br />
-          <span className="text-accent underline decoration-wavy decoration-accent/60">Bộ 3 tài liệu MONA miễn phí.</span>
+          <span className="text-accent underline decoration-wavy decoration-accent/60">Bộ 3 tài liệu MONA miễn phí</span>
         </h2>
         <div className="mt-4 max-w-2xl mx-auto space-y-3 text-lg text-paper leading-relaxed">
           <p>Điền form — Team MONA gửi link Zoom + nhắc lịch qua Zalo & email.</p>
@@ -940,54 +1185,7 @@ export default function App() {
       </div>
 
 
-      <form onSubmit={handleSubmit} className="bg-paper text-ink rounded-2xl p-6 md:p-10 space-y-5 shadow-2xl">
-                <div>
-                  <label htmlFor="hoten" className="block text-sm font-semibold mb-2">Họ và tên <span className="text-accent">*</span></label>
-                  <input id="hoten" name="hoten" type="text" required placeholder="VD: Nguyễn Văn A"
-                    value={form.hoten} onChange={e => setForm(f => ({...f, hoten: e.target.value}))}
-                    className="w-full px-4 py-3 border-2 border-line rounded-md focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition" />
-                  {errors.hoten && <p className="text-red-500 text-xs mt-1">{errors.hoten}</p>}
-                </div>
-                <div className="grid md:grid-cols-2 gap-5">
-                  <div>
-                    <label htmlFor="sdt" className="block text-sm font-semibold mb-2">Số điện thoại (Zalo) <span className="text-accent">*</span></label>
-                    <input id="sdt" name="sdt" type="tel" required placeholder="VD: 0901 234 567"
-                      value={form.sdt} onChange={e => setForm(f => ({...f, sdt: e.target.value}))}
-                      className="w-full px-4 py-3 border-2 border-line rounded-md focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition" />
-                    {errors.sdt && <p className="text-red-500 text-xs mt-1">{errors.sdt}</p>}
-                    <p className="text-xs text-ink font-medium mt-1.5">Dùng số đang xài Zalo — Triết & team gửi link & nhắc lịch qua đây.</p>
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-semibold mb-2">Email <span className="text-accent">*</span></label>
-                    <input id="email" name="email" type="email" required placeholder="ban@cuamon.com"
-                      value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))}
-                      className="w-full px-4 py-3 border-2 border-line rounded-md focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition" />
-                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="chuyenmon" className="block text-sm font-semibold mb-2">Hiện đang dạy gì / muốn dạy gì? <span className="text-accent">*</span></label>
-                  <input id="chuyenmon" name="chuyenmon" type="text" required placeholder="VD: Đang dạy lớp luyện thi IELTS / Muốn làm khoá kế toán cho SME"
-                    value={form.chuyenmon} onChange={e => setForm(f => ({...f, chuyenmon: e.target.value}))}
-                    className="w-full px-4 py-3 border-2 border-line rounded-md focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition" />
-                  <p className="text-xs text-ink font-medium mt-1.5">Một dòng — để Triết biết anh chị là ai trước khi vào.</p>
-                  {errors.chuyenmon && <p className="text-red-500 text-xs mt-1">{errors.chuyenmon}</p>}
-                </div>
-                <label className="flex items-start gap-3 p-4 bg-cream rounded-md cursor-pointer">
-                  <input type="checkbox" required
-                    checked={form.camket}
-                    onChange={e => setForm(f => ({...f, camket: e.target.checked}))}
-                    className="mt-1 w-5 h-5 accent-pink-600 shrink-0" />
-                  <span className="text-sm leading-relaxed text-ink">
-                    <strong>Tôi cam kết tham dự đủ webinar.</strong> Tôi hiểu Triết không bán giấc mơ — tôi tới để nhận hết và làm thật.
-                  </span>
-                </label>
-                <button type="submit" disabled={submitting}
-                  className="w-full btn-cta bg-accent hover:bg-accentDark disabled:opacity-60 text-paper text-lg px-8 py-5 rounded-xl transition shadow-lg shadow-accent/30 hover:scale-[1.01]">
-                  {submitting ? 'Đang đăng ký...' : 'ĐĂNG KÝ GIỮ CHỖ NGAY →'}
-                </button>
-                <p className="text-xs text-ink text-center font-medium">Webinar miễn phí. Slot có hạn — đủ là đóng form. Thông tin của anh chị được bảo mật, không gửi cho bên thứ ba.</p>
-              </form>
+      <WebinarForm onSuccess={() => setShowSuccess(true)} />
 
     </div>
   </section>
@@ -996,7 +1194,7 @@ export default function App() {
   <section className="bg-cream">
     <div className="max-w-3xl mx-auto px-4 py-20 md:py-32">
       <h2 className="font-black leading-tight text-ink">
-        Triết chỉ làm <span className="text-accent">1 lần này</span>.
+        Triết chỉ làm <span className="text-accent">1 lần này</span>
       </h2>
 
       <div className="mt-8 space-y-6 text-lg md:text-xl text-ink leading-relaxed">
