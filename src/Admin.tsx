@@ -413,7 +413,10 @@ function RichEditor({ value, onChange }: { value: string; onChange: (v: string) 
   const [showSource, setShowSource] = useState(false)
   const [sourceVal, setSourceVal] = useState(value)
   const [varOpen, setVarOpen] = useState(false)
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
   const varRef = useRef<HTMLDivElement>(null)
+  const linkRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
     extensions: [
@@ -434,7 +437,10 @@ function RichEditor({ value, onChange }: { value: string; onChange: (v: string) 
   }, [value, editor])
 
   useEffect(() => {
-    const h = (e: MouseEvent) => { if (varRef.current && !varRef.current.contains(e.target as Node)) setVarOpen(false) }
+    const h = (e: MouseEvent) => {
+      if (varRef.current && !varRef.current.contains(e.target as Node)) setVarOpen(false)
+      if (linkRef.current && !linkRef.current.contains(e.target as Node)) setLinkOpen(false)
+    }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [])
@@ -490,12 +496,24 @@ function RichEditor({ value, onChange }: { value: string; onChange: (v: string) 
 
         <div className="w-px h-4 bg-slate-300 mx-1" />
 
-        <ToolBtn onClick={() => {
-          const url = prompt('URL:')
-          if (url) editor?.chain().focus().setLink({ href: url }).run()
-        }} active={editor?.isActive('link')} title="Link">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-        </ToolBtn>
+        <div className="relative" ref={linkRef}>
+          <ToolBtn onClick={() => { setLinkUrl(editor?.getAttributes('link').href || ''); setLinkOpen(v => !v) }} active={editor?.isActive('link')} title="Link">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+          </ToolBtn>
+          {linkOpen && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 p-2 flex gap-2 min-w-[260px]">
+              <input autoFocus value={linkUrl} onChange={e => setLinkUrl(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { if (linkUrl) editor?.chain().focus().setLink({ href: linkUrl }).run(); else editor?.chain().focus().unsetLink().run(); setLinkOpen(false) } }}
+                placeholder="https://..." className="flex-1 border border-slate-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-400" />
+              <button type="button" onClick={() => { if (linkUrl) editor?.chain().focus().setLink({ href: linkUrl }).run(); else editor?.chain().focus().unsetLink().run(); setLinkOpen(false) }}
+                className="px-2 py-1 bg-blue-600 text-white text-xs rounded cursor-pointer hover:bg-blue-700">OK</button>
+              {editor?.isActive('link') && (
+                <button type="button" onClick={() => { editor?.chain().focus().unsetLink().run(); setLinkOpen(false) }}
+                  className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded cursor-pointer hover:bg-red-100">Xóa</button>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="w-px h-4 bg-slate-300 mx-1" />
 
@@ -546,7 +564,16 @@ function RichEditor({ value, onChange }: { value: string; onChange: (v: string) 
         </div>
       ) : (
         <EditorContent editor={editor}
-          className="prose prose-sm max-w-none min-h-[380px] px-4 py-3 focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[360px]" />
+          className="max-w-none min-h-[380px] px-4 py-3 focus:outline-none
+            [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[360px]
+            [&_.ProseMirror]:text-sm [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:leading-relaxed [&_.ProseMirror]:font-sans
+            [&_.ProseMirror_p]:my-2
+            [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul_li]:my-0.5
+            [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol_li]:my-0.5
+            [&_.ProseMirror_strong]:font-bold
+            [&_.ProseMirror_em]:italic
+            [&_.ProseMirror_a]:text-blue-600 [&_.ProseMirror_a]:underline [&_.ProseMirror_a]:cursor-pointer
+            [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:pl-3 [&_.ProseMirror_blockquote]:text-slate-500 [&_.ProseMirror_blockquote]:italic" />
       )}
     </div>
   )
