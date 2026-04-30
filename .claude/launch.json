@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "preview",
+      "name": "webinar",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "preview"],
-      "port": 4173
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "cwd": "C:\triet-webinar-1000-giang-vien"
     }
   ]
 }

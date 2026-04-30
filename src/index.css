@@ -24,6 +24,7 @@ html { scroll-behavior: smooth; }
      - Massive section whitespace (8-10rem mobile, 12-16rem desktop)
   ============================================================ */
 
+@layer base {
   body {
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 1.125rem;
@@ -82,6 +83,12 @@ html { scroll-behavior: smooth; }
   }
 
   .text-xs, .text-sm { font-weight: 400; }
+
+  /* Testimonials section h2 — smaller than default h2 */
+  .testimonials-h2 {
+    font-size: clamp(1.5rem, 3vw, 2.6rem) !important;
+  }
+} /* end @layer base */
 
   /* font-display class inherits headline style */
   .font-display {
@@ -168,17 +175,11 @@ html { scroll-behavior: smooth; }
     letter-spacing: 0.05em;
     text-transform: uppercase;
     font-style: italic;
-    font-size: 1.15em;
   }
 
   /* Section vertical rhythm — SLC uses very generous space between sections */
   .slc-section { padding-top: 8rem; padding-bottom: 8rem; }
   @media (min-width: 768px) { .slc-section { padding-top: 12rem; padding-bottom: 12rem; } }
-
-/* Testimonials section h2 — smaller than default h2 */
-.testimonials-h2 {
-  font-size: clamp(1.5rem, 3vw, 2.6rem) !important;
-}
 
 /* HoF marquee */
 
