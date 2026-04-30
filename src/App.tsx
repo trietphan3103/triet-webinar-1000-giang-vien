@@ -383,25 +383,7 @@ export default function App() {
   const [showSuccess, setShowSuccess] = useState(false)
 
   // Meta Pixel
-  useEffect(() => {
-    const pixelId = import.meta.env.VITE_META_PIXEL_ID
-    if (!pixelId) return
-    if (!window.fbq) {
-      const fn = function(...args: unknown[]) {
-        const f = fn as unknown as { callMethod?: (...a: unknown[]) => void; queue: unknown[] }
-        f.callMethod ? f.callMethod(...args) : f.queue.push(args)
-      }
-      const fnObj = fn as unknown as Record<string, unknown>
-      fnObj.push = fn; fnObj.loaded = true; fnObj.version = '2.0'; fnObj.queue = []
-      window.fbq = fn as (...args: unknown[]) => void
-      ;(window as unknown as Record<string, unknown>)['_fbq'] = fn
-      const s = document.createElement('script')
-      s.async = true; s.src = 'https://connect.facebook.net/en_US/fbevents.js'
-      document.head.appendChild(s)
-    }
-    window.fbq('init', pixelId)
-    window.fbq('trackCustom', 'WebinarPageView')
-  }, [])
+  // Pixel init + WebinarPageView được gắn trực tiếp trong index.html
 
   // Scroll depth tracking
   useEffect(() => {
