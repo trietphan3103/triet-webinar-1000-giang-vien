@@ -128,13 +128,13 @@ app.get('/api/analytics/pixel', async (req, res) => {
       fetch(`https://graph.facebook.com/v19.0/${pixelId}/stats?${base}&event=WebinarFormSubmit&aggregation=event_source`),
     ])
 
-    const json = await r.json()
+    const json: any = await r.json()
     if (!r.ok) return res.status(r.status).json(json)
 
     // SERVER count = deduplicated CAPI submissions
     let fsServer = 0
     if (fsSourceRes.ok) {
-      const fsJson = await fsSourceRes.json()
+      const fsJson: any = await fsSourceRes.json()
       for (const h of fsJson.data ?? [])
         for (const e of h.data ?? [])
           if (e.value === 'SERVER') fsServer += e.count
@@ -199,7 +199,7 @@ app.get('/api/analytics/ads', async (req, res) => {
     const timeRange = encodeURIComponent(JSON.stringify({ since, until }))
     const url = `https://graph.facebook.com/v19.0/${adAccountId}/insights?fields=${fields}&time_range=${timeRange}&level=ad&limit=50&access_token=${token}`
     const r = await fetch(url)
-    const json = await r.json()
+    const json: any = await r.json()
     if (!r.ok) return res.status(r.status).json(json)
 
     // Batch fetch post URLs từ creative
@@ -210,7 +210,7 @@ app.get('/api/analytics/ads', async (req, res) => {
         const creativeRes = await fetch(
           `https://graph.facebook.com/v19.0/?ids=${adIds.join(',')}&fields=creative{effective_object_story_id}&access_token=${token}`
         )
-        const creativeJson = await creativeRes.json()
+        const creativeJson: any = await creativeRes.json()
         for (const [adId, adData] of Object.entries<any>(creativeJson)) {
           const storyId = adData?.creative?.effective_object_story_id
           if (storyId) {
