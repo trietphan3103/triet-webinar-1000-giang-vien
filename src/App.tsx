@@ -386,21 +386,21 @@ export default function App() {
   useEffect(() => {
     const pixelId = import.meta.env.VITE_META_PIXEL_ID
     if (!pixelId) return
-    ;(function(f: Window & typeof globalThis, b: Document, e: string, v: string, n?: unknown, t?: HTMLScriptElement, s?: Element) {
-      if (f.fbq) return
+    if (!window.fbq) {
       const fn = function(...args: unknown[]) {
-        (fn as unknown as { callMethod?: (...a: unknown[]) => void; queue: unknown[] }).callMethod
-          ? (fn as unknown as { callMethod: (...a: unknown[]) => void }).callMethod(...args)
-          : (fn as unknown as { queue: unknown[] }).queue.push(args)
+        const f = fn as unknown as { callMethod?: (...a: unknown[]) => void; queue: unknown[] }
+        f.callMethod ? f.callMethod(...args) : f.queue.push(args)
       }
       const fnObj = fn as unknown as Record<string, unknown>
-      if (!(f as unknown as Record<string, unknown>)['_fbq']) (f as unknown as Record<string, unknown>)['_fbq'] = fn
       fnObj.push = fn; fnObj.loaded = true; fnObj.version = '2.0'; fnObj.queue = []
-      t = b.createElement(e) as HTMLScriptElement; t.async = true; t.src = v
-      s = b.getElementsByTagName(e)[0]; s.parentNode?.insertBefore(t, s)
-    })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
-    window.fbq?.('init', pixelId)
-    window.fbq?.('trackCustom', 'WebinarPageView')
+      window.fbq = fn as (...args: unknown[]) => void
+      ;(window as unknown as Record<string, unknown>)['_fbq'] = fn
+      const s = document.createElement('script')
+      s.async = true; s.src = 'https://connect.facebook.net/en_US/fbevents.js'
+      document.head.appendChild(s)
+    }
+    window.fbq('init', pixelId)
+    window.fbq('trackCustom', 'WebinarPageView')
   }, [])
 
   // Scroll depth tracking
