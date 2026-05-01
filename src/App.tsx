@@ -1,9 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-
-declare global {
-  interface Window { fbq?: (...args: unknown[]) => void }
-}
+import { pixel } from './lib/pixel'
 
 const VIDEO_PLAY_EVENT = 'vp:play'
 
@@ -167,7 +164,7 @@ function WebinarForm({ onSuccess }: { onSuccess: () => void }) {
         }),
       })
       if (res.ok) {
-        window.fbq?.('trackCustom', 'WebinarFormSubmit', {}, { eventID: eventId })
+        pixel.formSubmit(eventId)
         onSuccess()
       } else {
         const data = await res.json()
@@ -387,15 +384,15 @@ export default function App() {
 
   // Scroll depth tracking
   useEffect(() => {
-    const fired = new Set<number>()
-    const thresholds = [25, 50, 75, 90]
+    const fired = new Set<25 | 50 | 75 | 90>()
+    const thresholds = [25, 50, 75, 90] as const
     function onScroll() {
       const el = document.documentElement
       const pct = Math.round((el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100)
       for (const t of thresholds) {
         if (pct >= t && !fired.has(t)) {
           fired.add(t)
-          window.fbq?.('trackCustom', `WebinarViewContentScroll${t}`)
+          pixel.scrollDepth(t)
         }
       }
     }
@@ -405,15 +402,15 @@ export default function App() {
 
   // Time on site tracking
   useEffect(() => {
-    const fired = new Set<number>()
-    const milestones = [30, 60, 120]
+    const fired = new Set<30 | 60 | 120>()
+    const milestones = [30, 60, 120] as const
     const start = Date.now()
     const id = setInterval(() => {
       const elapsed = Math.floor((Date.now() - start) / 1000)
       for (const s of milestones) {
         if (elapsed >= s && !fired.has(s)) {
           fired.add(s)
-          window.fbq?.('trackCustom', `WebinarTimeOnSite${s}s`)
+          pixel.timeOnSite(s)
         }
       }
       if (fired.size === milestones.length) clearInterval(id)
