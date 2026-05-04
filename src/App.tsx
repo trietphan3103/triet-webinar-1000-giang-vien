@@ -165,6 +165,8 @@ function WebinarForm({ onSuccess }: { onSuccess: () => void }) {
       })
       if (res.ok) {
         pixel.formSubmit(eventId)
+        // Lưu user info để trang VIP dùng khi confirm thanh toán
+        sessionStorage.setItem('vip_user', JSON.stringify({ hoten: form.hoten, sdt: form.sdt, email: form.email }))
         onSuccess()
       } else {
         const data = await res.json()
@@ -303,7 +305,7 @@ function SuccessPopup() {
 
   useEffect(() => {
     if (clicked) return
-    if (cd === 0) { window.location.href = ZALO_URL; return }
+    if (cd === 0) { window.location.href = '/vip'; return }
     const t = setTimeout(() => setCd(c => c - 1), 1000)
     return () => clearTimeout(t)
   }, [cd, clicked])
@@ -335,16 +337,14 @@ function SuccessPopup() {
           Tham gia nhóm Zalo để nhận tài liệu và cập nhật mới nhất.
         </p>
 
-        {/* CTA Zalo */}
+        {/* CTA VIP upsell */}
         <a
-          href={ZALO_URL}
-          target="_blank"
-          rel="noreferrer"
+          href="/vip"
           onClick={() => setClicked(true)}
           className="btn-cta flex items-center justify-center gap-2 w-full text-paper font-bold text-base px-6 py-4 rounded-lg transition shadow-lg shadow-accent/30 hover:opacity-90 hover:scale-[1.01]"
           style={{background:'#FF2D6F'}}
         >
-          Tham gia nhóm Zalo nhận tài liệu
+          Xem quyền lợi & nhận tài liệu
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
           </svg>
@@ -353,7 +353,7 @@ function SuccessPopup() {
         {/* Countdown / After click */}
         <div className="mt-5 h-10">
           {clicked ? (
-            <p className="text-slate-400 text-sm">Hẹn gặp anh chị trong nhóm Zalo! 👋</p>
+            <p className="text-slate-400 text-sm">Đang chuyển hướng...</p>
           ) : (
             <div>
               <p className="text-slate-400 text-xs mb-2">Tự động chuyển hướng sau {cd}s</p>
