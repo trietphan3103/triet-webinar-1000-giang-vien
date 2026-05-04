@@ -5,7 +5,7 @@ const ZALO_FREE_URL     = import.meta.env.VITE_ZALO_URL          || 'https://zal
 const ZALO_VIP_URL      = import.meta.env.VITE_ZALO_VIP_URL      || 'https://zalo.me/g/a4cbjzoa8xjm4q8cfi5f'
 const VIP_API_URL       = import.meta.env.VITE_VIP_CONFIRM_API   || ''
 const BANK_CODE         = import.meta.env.VITE_BANK_CODE         || 'MB'
-const BANK_ACCOUNT      = import.meta.env.VITE_BANK_ACCOUNT      || ''
+const BANK_ACCOUNT      = import.meta.env.VITE_BANK_ACCOUNT      || '0123456789'
 const BANK_NAME         = import.meta.env.VITE_BANK_NAME         || 'TRAN NGUYEN TRIET'
 const VIP_AMOUNT        = 499000
 const VIP_PRICE_DISPLAY = '499.000đ'
@@ -256,15 +256,15 @@ function QrStep({ qrUrl, orderId, onConfirm }: { qrUrl: string; orderId: string;
           {qrUrl ? (
             <img src={qrUrl} alt="QR chuyển khoản VIP" className="w-full h-full object-contain" />
           ) : (
-            <div className="text-center p-3 text-gray-400 text-xs leading-relaxed">QR hiển thị<br />sau khi cấu hình<br />ngân hàng</div>
+            <div className="text-center p-3 text-gray-300 text-xs leading-relaxed font-medium">[ QR sẽ hiện<br />sau khi cấu hình ]</div>
           )}
         </div>
 
         {/* Info */}
         <div className="flex-1 space-y-3 w-full">
-          <InfoRow label="Ngân hàng" value={BANK_CODE} />
-          <InfoRow label="Số tài khoản" value={BANK_ACCOUNT || '(chưa cấu hình)'} />
-          <InfoRow label="Chủ tài khoản" value={BANK_NAME} />
+          <InfoRow label="Ngân hàng" value={BANK_CODE} placeholder={!import.meta.env.VITE_BANK_CODE} />
+          <InfoRow label="Số tài khoản" value={BANK_ACCOUNT} placeholder={!import.meta.env.VITE_BANK_ACCOUNT} />
+          <InfoRow label="Chủ tài khoản" value={BANK_NAME} placeholder={!import.meta.env.VITE_BANK_NAME} />
           <InfoRow label="Số tiền" value={`${VIP_AMOUNT.toLocaleString('vi-VN')}đ`} highlight />
           <div>
             <div className="text-paper/40 text-xs mb-1">Nội dung chuyển khoản</div>
@@ -288,11 +288,13 @@ function QrStep({ qrUrl, orderId, onConfirm }: { qrUrl: string; orderId: string;
   )
 }
 
-function InfoRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function InfoRow({ label, value, highlight, placeholder }: { label: string; value: string; highlight?: boolean; placeholder?: boolean }) {
   return (
     <div>
       <div className="text-paper/38 text-xs mb-0.5">{label}</div>
-      <div className={`font-semibold ${highlight ? 'text-accent text-lg' : 'text-paper text-sm'}`}>{value}</div>
+      <div className={`font-semibold ${highlight ? 'text-accent text-lg' : placeholder ? 'text-paper/35 text-sm italic' : 'text-paper text-sm'}`}>
+        {placeholder ? `[ ${value} ]` : value}
+      </div>
     </div>
   )
 }
