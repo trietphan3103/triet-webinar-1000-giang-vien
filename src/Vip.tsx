@@ -195,18 +195,30 @@ export default function Vip() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0C0C0F' }}>
-      {/* bg glow */}
-      <div className="pointer-events-none fixed inset-0" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -5%, rgba(255,45,111,0.15) 0%, transparent 65%)' }} />
+    <div className="min-h-screen relative overflow-hidden" style={{ background: '#0C0C0F' }}>
+
+      {/* ── Decorative layer (matches home dark sections) ── */}
+      {/* 1. Stronger top radial glow */}
+      <div className="pointer-events-none fixed inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255,45,111,0.22) 0%, transparent 68%)' }} />
+      {/* 2. Subtle white grid overlay */}
+      <div className="pointer-events-none fixed inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
+      {/* 3. Pink accent line — top */}
+      <div className="pointer-events-none fixed top-0 inset-x-0 h-px z-10" style={{ background: 'linear-gradient(90deg,transparent,#FF2D6F 30%,#FF2D6F 70%,transparent)' }} />
+      {/* 4. Large pink orb — top right */}
+      <div className="deco-orb pointer-events-none" style={{ width: '700px', height: '700px', top: '-260px', right: '-220px', background: 'radial-gradient(circle,rgba(255,45,111,0.11) 0%,transparent 70%)' }} />
+      {/* 5. Small pink orb — bottom left */}
+      <div className="deco-orb pointer-events-none" style={{ width: '400px', height: '400px', bottom: '5%', left: '-150px', background: 'radial-gradient(circle,rgba(255,45,111,0.07) 0%,transparent 70%)' }} />
+      {/* 6. Vertical accent line — left edge */}
+      <div className="deco-line-v fixed top-0 h-full hidden md:block pointer-events-none" style={{ left: '2.5rem' }} />
 
       <StickyBar onUpgrade={handleUpgradeClick} expired={expired} />
-    <div className="relative max-w-2xl mx-auto px-4 py-14 md:py-20" style={{ paddingBottom: '6rem' }}>
+      <div className="relative max-w-2xl mx-auto px-4 py-14 md:py-20" style={{ paddingBottom: '6rem' }}>
 
         {step === 'success' ? <SuccessState /> : (
           <>
             {/* ── Badge ── */}
             <div className="flex justify-center mb-8">
-              <span className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-accent border border-accent/40 rounded-full px-4 py-1.5" style={{ background: 'rgba(255,45,111,0.08)' }}>
+              <span className="inline-flex items-center gap-2 sect-label text-accent border border-accent/40 rounded-full px-4 py-1.5" style={{ background: 'rgba(255,45,111,0.08)' }}>
                 <StarIcon /> Dành riêng cho anh chị vừa đăng ký
               </span>
             </div>
@@ -226,7 +238,7 @@ export default function Vip() {
             </h1>
 
             {/* ── Lead-in copy ── */}
-            <div className="max-w-lg mx-auto mb-10 space-y-5 text-base leading-relaxed">
+            <div className="max-w-lg mx-auto mb-10 space-y-5">
               <p className="text-paper/80">
                 Webinar ngày 9/5 — Triết sẽ chia sẻ toàn bộ công thức xây sản phẩm điện tử của MONA. Không giữ lại gì. Người xem free cũng nhận được điều đó.
               </p>
@@ -248,7 +260,7 @@ export default function Vip() {
             {/* ── Section label ── */}
             <div className="flex items-center gap-3 mb-5">
               <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
-              <span className="text-paper/35 text-xs font-bold uppercase tracking-widest shrink-0">Anh chị nhận được</span>
+              <span className="sect-label text-paper/40 shrink-0">Anh chị nhận được</span>
               <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
             </div>
 
@@ -306,7 +318,7 @@ export default function Vip() {
 
             {/* ── Triết nói thật (objection handling) ── */}
             <div className="rounded-2xl px-6 py-5 mb-8" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <p className="text-paper/40 text-xs font-bold uppercase tracking-widest mb-4">Triết nói thật —</p>
+              <p className="sect-label text-paper/40 mb-4">Triết nói thật —</p>
               <div className="space-y-4 text-sm text-paper/70 leading-relaxed">
                 <p>
                   Triết không giỏi bán hàng kiểu "đây là cơ hội duy nhất trong đời". Anh chị đủ thông minh để biết điều đó.
