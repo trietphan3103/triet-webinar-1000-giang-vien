@@ -124,32 +124,37 @@ const BENEFITS = [
   {
     num: '01',
     hot: false,
-    title: 'Record toàn bộ 2 tiếng webinar',
-    body: 'Xem lại không giới hạn. Nghe bỏ lỡ ý nào — tua lại ngay. Không lo đến muộn hay mất tập trung vì con cái, công việc.',
+    value: '500.000đ',
+    title: 'Record toàn bộ 2 tiếng webinar — xem lại không giới hạn',
+    body: 'Sẽ có những đoạn anh chị muốn nghe lại — một con số, một framework, một câu Triết nói qua mà anh chị chưa kịp ghi. Record VIP cho phép xem lại bất cứ lúc nào, không hết hạn. Xem lần 1 để hiểu. Xem lần 2 để làm. Xem lần 3 để dạy lại cho đội nhóm.',
   },
   {
     num: '02',
     hot: true,
-    title: 'Buổi hỏi đáp riêng 17/5 — hỏi gì cũng được',
-    body: 'Ngày 17/5, Triết mở buổi riêng cho nhóm VIP. Anh chị hỏi thẳng về case của mình — đang dạy gì, muốn làm gì, đang mắc ở đâu. Triết trả lời thật, không trả lời kiểu "tuỳ trường hợp". Đây không phải Q&A chung. Là buổi Triết ngồi với anh chị.',
+    value: '2.000.000đ',
+    title: 'Buổi hỏi đáp riêng 17/5 — hỏi thẳng về case của anh chị',
+    body: 'Ngày 17/5, Triết mở buổi riêng cho nhóm VIP. Đây không phải Q&A kiểu "hỏi chung, trả lời chung". Anh chị hỏi về đúng case của mình — đang dạy gì, kinh nghiệm gì, thị trường nào, mắc chỗ nào. Triết trả lời thật, không né, không kiểu "tuỳ trường hợp". Chỉ slot VIP mới có buổi này.',
   },
   {
     num: '03',
     hot: true,
-    title: '1 buổi private call thẩm định 1:1',
-    body: '30 phút. Anh chị trình bày idea — Triết nói thẳng nên làm hay không nên làm, và tại sao. Không có gói nào khác của MONA có điều này.',
+    value: '3.000.000đ',
+    title: '1 buổi private call 1:1 — Triết thẩm định idea cho anh chị',
+    body: '30 phút. Anh chị trình bày: tôi có kinh nghiệm X năm, tôi muốn bán khóa Y, tệp tôi đang có là Z. Triết sẽ nói thẳng: nên làm không, làm theo hướng nào, cái gì đang sai trong cách anh chị đang nghĩ. Không có gói nào khác của MONA có điều này — kể cả gói trả tiền.',
   },
   {
     num: '04',
     hot: false,
-    title: 'Tài liệu nội bộ độc quyền',
-    body: 'Bộ template MONA dùng để onboard case thực tế: cấu trúc khoá học, checklist launch sản phẩm điện tử. Không bán riêng, không public.',
+    value: '800.000đ',
+    title: 'Tài liệu nội bộ MONA — không bán, không public',
+    body: 'Bộ template MONA đang dùng để onboard giảng viên mới: cấu trúc khoá học theo từng chủ đề, checklist từng bước launch sản phẩm điện tử, bảng giá tham chiếu theo tệp. Anh chị nhận file thẳng vào nhóm VIP — dùng được ngay, không cần tự mò.',
   },
   {
     num: '05',
     hot: false,
-    title: 'Phòng chờ Zalo VIP — vào ngay sau khi thanh toán',
-    body: 'Triết sẽ share thêm tài nguyên, trả lời câu hỏi nhanh và cập nhật trực tiếp trước ngày 9/5. Anh chị không phải ngồi chờ như nhóm free.',
+    value: '700.000đ',
+    title: 'Nhóm Zalo VIP — vào ngay, nhận tài liệu trước webinar',
+    body: 'Sau khi thanh toán xong, anh chị vào nhóm VIP. Triết sẽ share thêm tài nguyên, trả lời câu hỏi nhanh và cập nhật trực tiếp trước ngày 9/5. Không phải ngồi chờ như nhóm free. Và trong nhóm VIP — anh chị sẽ thấy ai đang làm thật, đang hỏi thật. Khác hẳn.',
   },
 ]
 
@@ -206,79 +211,144 @@ export default function Vip() {
               </span>
             </div>
 
+            {/* ── Congrats block ── */}
+            <div className="rounded-2xl px-6 py-5 mb-8 text-center" style={{ background: 'rgba(255,45,111,0.06)', border: '1px solid rgba(255,45,111,0.2)' }}>
+              <p className="text-accent font-black uppercase tracking-widest text-xs mb-2" style={{ fontFamily: "'Barlow Semi Condensed', sans-serif" }}>Chúc mừng — Anh/chị đã đăng ký</p>
+              <p className="text-paper/75 text-sm leading-relaxed max-w-md mx-auto">
+                Phần lớn người thấy webinar này — rồi đóng tab. Anh chị đã điền form. Đó là bước đầu tiên, và nó quan trọng hơn mọi người nghĩ.
+              </p>
+            </div>
+
             {/* ── Headline ── */}
-            <h1 className="text-paper text-center mb-4" style={{ fontFamily: "'Barlow Semi Condensed', sans-serif", fontWeight: 800, fontStyle: 'italic', textTransform: 'uppercase', fontSize: 'clamp(2rem, 5vw, 3.2rem)', lineHeight: 1.1 }}>
+            <h1 className="text-paper text-center mb-6" style={{ fontFamily: "'Barlow Semi Condensed', sans-serif", fontWeight: 800, fontStyle: 'italic', textTransform: 'uppercase', fontSize: 'clamp(2rem, 5vw, 3.2rem)', lineHeight: 1.1 }}>
               Nâng lên <span className="text-accent">VIP</span> —<br />
               lợi thế không công bằng<br />cho người nghiêm túc
             </h1>
 
-            {/* ── Opening copy ── */}
-            <div className="max-w-lg mx-auto mb-10 space-y-3">
-              <p className="text-paper/70 text-center text-base leading-relaxed">
-                Anh chị vừa đăng ký. Đó là bước đầu tiên — và phần lớn người dừng lại ở đó.
+            {/* ── Lead-in copy ── */}
+            <div className="max-w-lg mx-auto mb-10 space-y-5 text-base leading-relaxed">
+              <p className="text-paper/80">
+                Webinar ngày 9/5 — Triết sẽ chia sẻ toàn bộ công thức xây sản phẩm điện tử của MONA. Không giữ lại gì. Người xem free cũng nhận được điều đó.
               </p>
-              <p className="text-paper text-center text-base leading-relaxed font-medium">
+              <p className="text-paper/80">
+                Nhưng đây là sự thật mà Triết muốn nói thẳng:
+              </p>
+              <p className="text-paper font-semibold">
+                Nghe xong — 80% người sẽ không làm. Không phải vì lười. Mà vì họ không có ai ngồi lại với họ và nói: "<em className="text-accent not-italic">Cụ thể là anh chị nên bắt đầu từ đây, theo cách này, với tệp đó.</em>"
+              </p>
+              <p className="text-paper/80">
+                VIP không phải một cái badge. VIP là Triết ngồi lại với anh chị — trước webinar, sau webinar, và trong buổi thẩm định 1:1 — để đảm bảo anh chị không chỉ hiểu mà còn bắt tay làm được.
+              </p>
+              <p className="text-paper/80">
                 Nâng VIP là anh chị đang nói với chính mình:{' '}
-                <em className="text-accent not-italic">"Tôi không đến để nghe cho biết. Tôi đến để làm thật."</em>
+                <span className="text-paper font-semibold italic">"Tôi không đến để nghe cho biết. Tôi đến để làm thật."</span>
               </p>
             </div>
 
+            {/* ── Section label ── */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+              <span className="text-paper/35 text-xs font-bold uppercase tracking-widest shrink-0">Anh chị nhận được</span>
+              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+            </div>
+
             {/* ── Benefits ── */}
-            <div className="space-y-3 mb-10">
+            <div className="space-y-3 mb-8">
               {BENEFITS.map((b) => (
                 <div key={b.num}
-                  className="rounded-2xl px-5 py-4 flex gap-4"
+                  className="rounded-2xl px-5 py-5 flex gap-4"
                   style={{
                     background: b.hot ? 'rgba(255,45,111,0.08)' : 'rgba(255,255,255,0.04)',
                     border: b.hot ? '1px solid rgba(255,45,111,0.28)' : '1px solid rgba(255,255,255,0.07)',
                   }}>
-                  {/* Number */}
                   <div className="shrink-0 pt-0.5">
                     <span className="font-black text-xs" style={{ fontFamily: "'Barlow Semi Condensed', sans-serif", color: b.hot ? '#FF2D6F' : 'rgba(255,255,255,0.18)', letterSpacing: '0.05em' }}>{b.num}</span>
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-bold text-paper text-sm leading-snug">{b.title}</span>
-                      {b.hot && <span className="text-xs font-bold text-accent bg-accent/10 border border-accent/25 rounded-full px-2 py-0.5 shrink-0">Quan trọng</span>}
+                    <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-paper text-sm leading-snug">{b.title}</span>
+                        {b.hot && <span className="text-xs font-bold text-accent bg-accent/10 border border-accent/25 rounded-full px-2 py-0.5 shrink-0">Quan trọng</span>}
+                      </div>
+                      <span className="text-paper/35 text-xs font-semibold shrink-0 tabular-nums">
+                        <span className="line-through">Trị giá {b.value}</span>
+                      </span>
                     </div>
-                    <p className="text-paper/52 text-sm leading-relaxed">{b.body}</p>
+                    <p className="text-paper/55 text-sm leading-relaxed">{b.body}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* ── Price + CTA block ── */}
-            <div id="vip-cta" className="rounded-2xl p-6 md:p-8 mb-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
-              <div className="flex items-end justify-between mb-5">
+            {/* ── Value stack summary ── */}
+            <div className="rounded-2xl px-6 py-5 mb-8" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="space-y-2 mb-4">
+                {BENEFITS.map((b) => (
+                  <div key={b.num} className="flex items-center justify-between text-sm">
+                    <span className="text-paper/55">#{b.num} — {b.title.split('—')[0].trim()}</span>
+                    <span className="text-paper/40 tabular-nums shrink-0">{b.value}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="h-px mb-4" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-paper/40 text-xs font-semibold uppercase tracking-wider mb-1">Học phí VIP</div>
-                  <div className="text-accent font-black leading-none" style={{ fontSize: '2.6rem', fontFamily: "'Barlow Semi Condensed', sans-serif" }}>{VIP_PRICE_DISPLAY}</div>
-                  <div className="text-paper/35 text-xs mt-1.5">Trả một lần · giữ mãi</div>
+                  <div className="text-paper/40 text-xs mb-0.5">Tổng giá trị</div>
+                  <div className="text-paper font-bold text-lg tabular-nums line-through text-paper/40">7.000.000đ</div>
                 </div>
-                <div className="text-right text-paper/40 text-xs space-y-1">
-                  <div className="line-through">Webinar Free</div>
-                  <div className="font-semibold text-paper/55">+ 5 quyền lợi VIP</div>
+                <div className="text-right">
+                  <div className="text-paper/40 text-xs mb-0.5">Anh chị trả</div>
+                  <div className="text-accent font-black leading-none tabular-nums" style={{ fontSize: '2rem', fontFamily: "'Barlow Semi Condensed', sans-serif" }}>{VIP_PRICE_DISPLAY}</div>
                 </div>
+              </div>
+              <p className="text-paper/30 text-xs mt-3 text-center">Trả một lần · không phí ẩn · quyền lợi giữ mãi</p>
+            </div>
+
+            {/* ── Triết nói thật (objection handling) ── */}
+            <div className="rounded-2xl px-6 py-5 mb-8" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-paper/40 text-xs font-bold uppercase tracking-widest mb-4">Triết nói thật —</p>
+              <div className="space-y-4 text-sm text-paper/70 leading-relaxed">
+                <p>
+                  Triết không giỏi bán hàng kiểu "đây là cơ hội duy nhất trong đời". Anh chị đủ thông minh để biết điều đó.
+                </p>
+                <p>
+                  Cái Triết có thể nói là: <span className="text-paper font-semibold">499k — bằng một bữa ăn nhóm 4 người</span> — để đổi lấy 1 buổi thẩm định 1:1 mà các giảng viên trả 3 triệu vẫn không chắc được xếp lịch.
+                </p>
+                <p>
+                  Nếu anh chị xem webinar xong, thấy content không có gì áp dụng được — Triết không muốn anh chị trả VIP. Nhưng nếu anh chị đang nghiêm túc với việc có sản phẩm điện tử trong 3–6 tháng tới — thì đây là khoảng cách giữa "đang nghĩ" và "đang làm".
+                </p>
+                <p className="text-paper/45">
+                  Buổi Q&A riêng 17/5 và call 1:1 chỉ dành cho VIP đợt này. Sau đó không mở thêm — không phải vì tạo khan hiếm giả, mà vì Triết không có đủ thời gian cho nhiều hơn.
+                </p>
+              </div>
+            </div>
+
+            {/* ── Price + CTA block ── */}
+            <div id="vip-cta" className="rounded-2xl p-6 md:p-8 mb-6" style={{ background: 'rgba(255,45,111,0.06)', border: '1px solid rgba(255,45,111,0.22)' }}>
+              <p className="text-center text-paper/60 text-sm mb-5">Xác nhận nâng VIP — anh chị trả</p>
+              <div className="text-center mb-6">
+                <div className="text-accent font-black leading-none tabular-nums" style={{ fontSize: 'clamp(2.5rem,8vw,3.8rem)', fontFamily: "'Barlow Semi Condensed', sans-serif" }}>{VIP_PRICE_DISPLAY}</div>
+                <div className="text-paper/35 text-xs mt-2">một lần duy nhất · giữ mãi toàn bộ quyền lợi</div>
               </div>
 
               {step === 'offer' && !expired && (
                 <>
                   <button
                     onClick={() => setStep('qr')}
-                    className="btn-cta w-full text-center text-paper rounded-xl py-4 text-lg transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer mb-3"
-                    style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 8px 32px rgba(255,45,111,0.3)' }}
+                    className="btn-cta w-full text-center text-paper rounded-xl py-4 text-lg font-bold transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer mb-3"
+                    style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 8px 32px rgba(255,45,111,0.35)' }}
                   >
-                    Tôi muốn nâng lên VIP →
+                    Tôi muốn nâng lên VIP — 499k →
                   </button>
-                  <p className="text-paper/30 text-xs text-center">
-                    Bấm vào để xem thông tin chuyển khoản. Sau khi chuyển, bấm xác nhận — team duyệt trong 15–30 phút.
+                  <p className="text-paper/30 text-xs text-center leading-relaxed">
+                    Bấm để xem QR chuyển khoản. Sau khi chuyển xong → bấm xác nhận. Team duyệt trong 15–30 phút và thêm anh chị vào nhóm VIP ngay.
                   </p>
                 </>
               )}
 
               {step === 'offer' && expired && (
                 <div className="text-center py-3 space-y-2">
-                  <p className="text-paper/50 text-sm">Offer VIP đã hết hạn.</p>
+                  <p className="text-paper/50 text-sm">Offer VIP đã hết hạn trong phiên này.</p>
                   <a href={ZALO_FREE_URL} target="_blank" rel="noopener noreferrer"
                     className="inline-block text-accent text-sm underline underline-offset-2">
                     Vào nhóm Zalo miễn phí →
@@ -304,12 +374,12 @@ export default function Vip() {
             </div>
 
             {/* ── Urgency ── */}
-            <div className="rounded-xl px-4 py-3 mb-7 flex items-start gap-3" style={{ background: 'rgba(255,45,111,0.06)', border: '1px solid rgba(255,45,111,0.18)' }}>
+            <div className="rounded-xl px-4 py-3 mb-7 flex items-start gap-3" style={{ background: 'rgba(255,45,111,0.05)', border: '1px solid rgba(255,45,111,0.15)' }}>
               <ClockIcon />
               <div className="text-sm leading-relaxed">
-                <span className="text-paper/70">Offer VIP đóng trước giờ khai mạc webinar 9/5/2026 lúc 20:00 — còn </span>
+                <span className="text-paper/65">Offer VIP đóng trước giờ khai mạc webinar 9/5/2026 lúc 20:00 — còn </span>
                 <CountdownTimer />
-                <span className="text-paper/70">. Sau đó không có cách nào nâng lên VIP. Buổi 17/5 cũng không mở thêm slot.</span>
+                <span className="text-paper/65">. Sau thời điểm đó — không có cách nào nâng lên VIP. Buổi Q&A riêng 17/5 và call 1:1 cũng không mở thêm slot.</span>
               </div>
             </div>
 
@@ -319,7 +389,7 @@ export default function Vip() {
                 href={ZALO_FREE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-paper/28 text-sm hover:text-paper/50 transition-colors"
+                className="text-paper/25 text-xs hover:text-paper/45 transition-colors"
               >
                 Không, cảm ơn Triết — tôi xem free thôi, không cần thêm hỗ trợ →
               </a>
