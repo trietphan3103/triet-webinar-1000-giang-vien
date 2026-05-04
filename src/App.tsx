@@ -268,7 +268,7 @@ function WebinarForm({ onSuccess }: { onSuccess: () => void }) {
   )
 }
 
-const WEBINAR_DATE = new Date('2026-05-09T20:00:00+07:00')
+const WEBINAR_DATE = new Date('2026-05-16T20:00:00+07:00')
 
 function useCountdown() {
   const [cd, setCd] = useState('--:--:--:--')
@@ -451,7 +451,7 @@ export default function App() {
       {/* Eyebrow: date */}
       <div className="mb-5 inline-flex items-center gap-2 bg-accent text-paper text-xs md:text-sm font-bold px-4 py-2 rounded-full" style={{boxShadow:"0 4px 20px rgba(255,45,111,0.35)"}}>
         <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        20:00 · Thứ 7 · 9/5/2026 · Miễn phí
+        20:00 · Thứ 7 · 16/5/2026 · Miễn phí
       </div>
 
       {/* H1 */}
