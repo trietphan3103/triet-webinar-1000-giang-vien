@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 /* ── ENV vars ───────────────────────────────────────────────────────────── */
 const ZALO_FREE_URL     = import.meta.env.VITE_ZALO_URL          || 'https://zalo.me/g/fwtjhqz5bkchcxuontjq'
@@ -9,6 +9,87 @@ const BANK_ACCOUNT      = import.meta.env.VITE_BANK_ACCOUNT      || '0123456789'
 const BANK_NAME         = import.meta.env.VITE_BANK_NAME         || 'TRAN NGUYEN TRIET'
 const VIP_AMOUNT        = 499000
 const VIP_PRICE_DISPLAY = '499.000đ'
+const SESSION_MINUTES   = 15   // offer expires after N minutes
+
+/* ── Session countdown (15 phút từ lần đầu vào trang) ───────────────────── */
+function getSessionExpiry(): number {
+  const KEY = 'vip_offer_expiry'
+  const stored = sessionStorage.getItem(KEY)
+  if (stored) return parseInt(stored, 10)
+  const expiry = Date.now() + SESSION_MINUTES * 60 * 1000
+  sessionStorage.setItem(KEY, String(expiry))
+  return expiry
+}
+
+function useSessionCountdown() {
+  const [expiry] = useState(getSessionExpiry)
+  const [remaining, setRemaining] = useState(() => Math.max(0, expiry - Date.now()))
+
+  useEffect(() => {
+    const tick = () => setRemaining(Math.max(0, expiry - Date.now()))
+    tick()
+    const id = setInterval(tick, 500)
+    return () => clearInterval(id)
+  }, [expiry])
+
+  const mm = String(Math.floor(remaining / 60000)).padStart(2, '0')
+  const ss = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0')
+  return { remaining, mm, ss, expired: remaining === 0 }
+}
+
+/* ── Sticky countdown bar ────────────────────────────────────────────────── */
+function StickyBar({ onUpgrade, expired }: { onUpgrade: () => void; expired: boolean }) {
+  const { mm, ss } = useSessionCountdown()
+  return (
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-4 py-3 md:px-8"
+      style={{ background: 'linear-gradient(135deg,#1a0a10 0%,#0C0C0F 100%)', borderTop: '1px solid rgba(255,45,111,0.3)', boxShadow: '0 -8px 32px rgba(0,0,0,0.6)' }}
+    >
+      {/* Label + timer */}
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="text-paper/50 text-xs font-bold tracking-widest uppercase hidden sm:block shrink-0">
+          {expired ? 'Offer đã đóng' : 'Nâng VIP đóng trong'}
+        </span>
+        <span className="text-paper/50 text-xs font-bold tracking-widest uppercase sm:hidden shrink-0">
+          {expired ? 'Đã đóng' : 'Còn'}
+        </span>
+        {!expired && (
+          <div className="flex items-end gap-1">
+            <div className="text-center">
+              <div className="text-paper font-black tabular-nums leading-none" style={{ fontSize: 'clamp(1.4rem,4vw,2rem)', fontFamily: "'Barlow Semi Condensed',sans-serif" }}>{mm}</div>
+              <div className="text-accent text-[10px] font-bold uppercase tracking-wider">Phút</div>
+            </div>
+            <div className="text-paper font-black leading-none mb-1" style={{ fontSize: 'clamp(1.2rem,3.5vw,1.8rem)', fontFamily: "'Barlow Semi Condensed',sans-serif" }}>:</div>
+            <div className="text-center">
+              <div className="text-paper font-black tabular-nums leading-none" style={{ fontSize: 'clamp(1.4rem,4vw,2rem)', fontFamily: "'Barlow Semi Condensed',sans-serif" }}>{ss}</div>
+              <div className="text-accent text-[10px] font-bold uppercase tracking-wider">Giây</div>
+            </div>
+          </div>
+        )}
+        {expired && (
+          <span className="text-accent font-bold text-sm">Offer VIP không còn khả dụng</span>
+        )}
+      </div>
+
+      {/* CTA */}
+      {!expired && (
+        <button
+          onClick={onUpgrade}
+          className="btn-cta shrink-0 text-paper rounded-lg px-4 py-2.5 text-sm md:text-base transition-all hover:opacity-90 active:scale-[0.97] cursor-pointer whitespace-nowrap"
+          style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 4px 20px rgba(255,45,111,0.4)' }}
+        >
+          Nâng lên VIP →
+        </button>
+      )}
+      {expired && (
+        <a href={ZALO_FREE_URL} target="_blank" rel="noopener noreferrer"
+          className="shrink-0 text-paper/50 text-xs underline underline-offset-2">
+          Vào nhóm free →
+        </a>
+      )}
+    </div>
+  )
+}
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 function makeOrderId() {
@@ -81,6 +162,13 @@ export default function Vip() {
     try { return JSON.parse(sessionStorage.getItem('vip_user') || 'null') } catch { return null }
   })
   const qrUrl = makeQrUrl(orderId)
+  const { expired } = useSessionCountdown()
+
+  const handleUpgradeClick = useCallback(() => {
+    if (step === 'offer') setStep('qr')
+    // Scroll to CTA block
+    document.getElementById('vip-cta')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [step])
 
   async function handleConfirm() {
     setStep('confirming')
@@ -106,7 +194,8 @@ export default function Vip() {
       {/* bg glow */}
       <div className="pointer-events-none fixed inset-0" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -5%, rgba(255,45,111,0.15) 0%, transparent 65%)' }} />
 
-      <div className="relative max-w-2xl mx-auto px-4 py-14 md:py-20">
+      <StickyBar onUpgrade={handleUpgradeClick} expired={expired} />
+    <div className="relative max-w-2xl mx-auto px-4 py-14 md:py-20" style={{ paddingBottom: '6rem' }}>
 
         {step === 'success' ? <SuccessState /> : (
           <>
@@ -159,7 +248,7 @@ export default function Vip() {
             </div>
 
             {/* ── Price + CTA block ── */}
-            <div className="rounded-2xl p-6 md:p-8 mb-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
+            <div id="vip-cta" className="rounded-2xl p-6 md:p-8 mb-6" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
               <div className="flex items-end justify-between mb-5">
                 <div>
                   <div className="text-paper/40 text-xs font-semibold uppercase tracking-wider mb-1">Học phí VIP</div>
@@ -172,7 +261,7 @@ export default function Vip() {
                 </div>
               </div>
 
-              {step === 'offer' && (
+              {step === 'offer' && !expired && (
                 <>
                   <button
                     onClick={() => setStep('qr')}
@@ -185,6 +274,16 @@ export default function Vip() {
                     Bấm vào để xem thông tin chuyển khoản. Sau khi chuyển, bấm xác nhận — team duyệt trong 15–30 phút.
                   </p>
                 </>
+              )}
+
+              {step === 'offer' && expired && (
+                <div className="text-center py-3 space-y-2">
+                  <p className="text-paper/50 text-sm">Offer VIP đã hết hạn.</p>
+                  <a href={ZALO_FREE_URL} target="_blank" rel="noopener noreferrer"
+                    className="inline-block text-accent text-sm underline underline-offset-2">
+                    Vào nhóm Zalo miễn phí →
+                  </a>
+                </div>
               )}
 
               {step === 'qr' && <QrStep qrUrl={qrUrl} orderId={orderId} onConfirm={handleConfirm} />}
