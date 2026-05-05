@@ -4,10 +4,6 @@ import { pixel } from './lib/pixel'
 /* ── ENV vars ───────────────────────────────────────────────────────────── */
 const ZALO_FREE_URL     = import.meta.env.VITE_ZALO_URL          || 'https://zalo.me/g/fwtjhqz5bkchcxuontjq'
 const ZALO_VIP_URL      = import.meta.env.VITE_ZALO_VIP_URL      || 'https://zalo.me/g/a4cbjzoa8xjm4q8cfi5f'
-const VIP_API_URL       = import.meta.env.VITE_VIP_CONFIRM_API   || ''
-const BANK_CODE         = import.meta.env.VITE_BANK_CODE         || 'MB'
-const BANK_ACCOUNT      = import.meta.env.VITE_BANK_ACCOUNT      || '0123456789'
-const BANK_NAME         = import.meta.env.VITE_BANK_NAME         || 'TRAN NGUYEN TRIET'
 const VIP_AMOUNT        = 499000
 const VIP_PRICE_DISPLAY = '499.000đ'
 const SESSION_MINUTES   = 10   // cycle length — resets automatically when done
@@ -270,13 +266,6 @@ export default function Vip() {
     const fbp = document.cookie.split('; ').find(r => r.startsWith('_fbp='))?.split('=')[1]
 
     await Promise.all([
-      // External VIP API (lưu đơn)
-      VIP_API_URL ? fetch(VIP_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, amount: VIP_AMOUNT, hoten: formData?.hoten || '', sdt: formData?.sdt || '', email: formData?.email || '' }),
-      }).catch(e => console.error('VIP API error:', e)) : Promise.resolve(),
-
       // CAPI Purchase (server-side, dedup với browser pixel)
       fetch('/api/vip/purchase', {
         method: 'POST',
