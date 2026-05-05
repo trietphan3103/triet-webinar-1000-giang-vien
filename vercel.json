@@ -6,6 +6,8 @@
     { "source": "/api/analytics/pixel", "destination": "/api/analytics/pixel" },
     { "source": "/api/analytics/ads", "destination": "/api/analytics/ads" },
     { "source": "/api/broadcast", "destination": "/api/broadcast" },
+    { "source": "/api/vip/create-order", "destination": "/api/vip/create-order" },
+    { "source": "/api/vip/order-status", "destination": "/api/vip/order-status" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

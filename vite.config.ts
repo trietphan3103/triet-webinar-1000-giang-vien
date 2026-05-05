@@ -14,11 +14,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       hmr: env.DISABLE_HMR !== 'true',
       proxy: {
-        '/api/analytics': {
-          target: 'http://localhost:8080',
-          changeOrigin: true,
-        },
-        '/api/submit': {
+        '/api': {
           target: 'http://localhost:8080',
           changeOrigin: true,
         },

@@ -6,7 +6,7 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
-      "cwd": "C:\triet-webinar-1000-giang-vien"
+      "cwd": "/Users/thunguyen/Documents/workspace/triet-webinar-1000-giang-vien"
     }
   ]
 }

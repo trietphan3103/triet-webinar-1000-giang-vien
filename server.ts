@@ -66,14 +66,16 @@ app.post('/api/submit', async (req, res) => {
       // 2. Gửi WebinarFormSubmit lên Meta CAPI (parallel)
       process.env.META_PIXEL_ID && process.env.META_ACCESS_TOKEN
         ? (async () => {
-            const [hashedEmail, hashedPhone] = await Promise.all([
+            const [hashedEmail, hashedPhone, hashedName] = await Promise.all([
               sha256(email.trim().toLowerCase()),
               sha256(normalizePhone(phone)),
+              name ? sha256(name.trim().toLowerCase()) : Promise.resolve(undefined),
             ])
             const userData: Record<string, unknown> = {
               em: [hashedEmail], ph: [hashedPhone],
               client_ip_address: clientIp, client_user_agent: ua,
             }
+            if (hashedName) userData.fn = [hashedName]
             if (fbc) userData.fbc = fbc
             if (fbp) userData.fbp = fbp
 
@@ -269,6 +271,133 @@ app.get('/api/analytics/ads', async (req, res) => {
     res.json({ ads: rows, campaigns: Object.values(campaignMap), since, until })
   } catch (err) {
     console.error('[/api/analytics/ads]', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// ─── POST /api/vip/create-order ──────────────────────────────────────────────
+
+app.post('/api/vip/create-order', async (req, res) => {
+  try {
+    const { name, phone, email } = req.body
+    if (!name || !phone || !email) return res.status(400).json({ error: 'Thiếu thông tin' })
+
+    const khaRes = await fetch('https://kha-webinar.mona.academy/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': process.env.KHA_API_KEY!,
+      },
+      body: JSON.stringify({ name, phone, email }),
+    })
+
+    const data = await khaRes.json()
+    res.status(khaRes.status).json(data)
+  } catch (err) {
+    console.error('[/api/vip/create-order]', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// ─── GET /api/vip/order-status ───────────────────────────────────────────────
+
+let _adminToken = ''
+let _adminTokenExpiry = 0
+
+async function getAdminToken(): Promise<string> {
+  if (_adminToken && Date.now() < _adminTokenExpiry) return _adminToken
+  const res = await fetch('https://kha-webinar.mona.academy/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: process.env.KHA_ADMIN_USER || 'admin',
+      password: process.env.KHA_ADMIN_PASS || '',
+    }),
+  })
+  const data: any = await res.json()
+  _adminToken = data.token || ''
+  _adminTokenExpiry = Date.now() + 50 * 60 * 1000 // 50 phút
+  return _adminToken
+}
+
+app.get('/api/vip/order-status', async (req, res) => {
+  const code = req.query.code as string
+  if (!code) return res.status(400).json({ error: 'Thiếu order code' })
+  try {
+    const token = await getAdminToken()
+    const r = await fetch('https://kha-webinar.mona.academy/admin/orders', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const json: any = await r.json()
+    const orders: any[] = Array.isArray(json) ? json : (json.data ?? [])
+    const order = orders.find((o: any) => o.order_code === code)
+    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn' })
+    res.json({ status: order.status, confirmed: order.status === 'completed', order })
+  } catch (err) {
+    console.error('[/api/vip/order-status]', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// ─── POST /api/vip/purchase ───────────────────────────────────────────────────
+
+app.post('/api/vip/purchase', async (req, res) => {
+  try {
+    const { orderId, amount, hoten, sdt, email, fbc, fbp, userAgent, eventId } = req.body
+
+    const clientIp =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ||
+      (req.headers['x-real-ip'] as string) ||
+      req.socket.remoteAddress || '0.0.0.0'
+    const ua = userAgent || req.headers['user-agent'] || ''
+
+    if (!process.env.META_PIXEL_ID || !process.env.META_ACCESS_TOKEN) {
+      return res.status(200).json({ ok: true, skipped: 'no pixel config' })
+    }
+
+    const [hashedEmail, hashedPhone, hashedName] = await Promise.all([
+      email ? sha256(email.trim().toLowerCase()) : Promise.resolve(undefined),
+      sdt   ? sha256(normalizePhone(sdt))         : Promise.resolve(undefined),
+      hoten ? sha256(hoten.trim().toLowerCase())  : Promise.resolve(undefined),
+    ])
+
+    const userData: Record<string, unknown> = {
+      client_ip_address: clientIp,
+      client_user_agent: ua,
+    }
+    if (hashedEmail) userData.em = [hashedEmail]
+    if (hashedPhone) userData.ph = [hashedPhone]
+    if (hashedName)  userData.fn = [hashedName]
+    if (fbc) userData.fbc = fbc
+    if (fbp) userData.fbp = fbp
+
+    const capiRes = await fetch(
+      `https://graph.facebook.com/v19.0/${process.env.META_PIXEL_ID}/events?access_token=${process.env.META_ACCESS_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [{
+          event_name: 'Purchase',
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: eventId || `vip-purchase-${orderId || Date.now()}`,
+          action_source: 'website',
+          event_source_url: `${process.env.APP_URL || ''}/vip`,
+          user_data: userData,
+          custom_data: {
+            value: amount || 499000,
+            currency: 'VND',
+            order_id: orderId,
+          },
+        }]}),
+      }
+    )
+
+    const capiData = await capiRes.json()
+    if (!capiRes.ok) console.error('[/api/vip/purchase] CAPI error:', capiData)
+
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('[/api/vip/purchase]', err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })

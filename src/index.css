@@ -135,6 +135,7 @@ html { scroll-behavior: smooth; }
       -55deg, transparent, transparent 20px,
       rgba(0,0,0,0.025) 20px, rgba(0,0,0,0.025) 21px
     );
+    background-attachment: fixed;
   }
 
   /* Thin accent line decoration */

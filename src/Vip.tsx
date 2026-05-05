@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { pixel } from './lib/pixel'
 
 /* ── ENV vars ───────────────────────────────────────────────────────────── */
 const ZALO_FREE_URL     = import.meta.env.VITE_ZALO_URL          || 'https://zalo.me/g/fwtjhqz5bkchcxuontjq'
@@ -99,14 +100,22 @@ function StickyBar({ onUpgrade }: { onUpgrade: () => void }) {
   )
 }
 
+/* ── Types ───────────────────────────────────────────────────────────────── */
+interface PaymentInfo {
+  account_name: string
+  account_number: string
+  bank_name: string
+  bank_logo_url: string
+  bank_id: string
+}
+
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 function makeOrderId() {
   return 'VIP' + Date.now().toString(36).toUpperCase().slice(-6)
 }
-function makeQrUrl(orderId: string) {
-  if (!BANK_ACCOUNT) return ''
-  const desc = encodeURIComponent(`VIPWB ${orderId}`)
-  return `https://img.vietqr.io/image/${BANK_CODE}-${BANK_ACCOUNT}-compact2.jpg?amount=${VIP_AMOUNT}&addInfo=${desc}&accountName=${encodeURIComponent(BANK_NAME)}`
+function makeQrUrl(orderCode: string, amount: number, payment: PaymentInfo) {
+  const desc = encodeURIComponent(orderCode)
+  return `https://img.vietqr.io/image/${payment.bank_id}-${payment.account_number}-compact2.jpg?amount=${amount}&addInfo=${desc}&accountName=${encodeURIComponent(payment.account_name)}`
 }
 
 /* ── Countdown ─────────────────────────────────────────────────────────── */
@@ -218,45 +227,82 @@ function InlineCta({ onUpgrade, mm, ss, dark, flush }: { onUpgrade: () => void; 
 
 /* ── Main ────────────────────────────────────────────────────────────────── */
 export default function Vip() {
-  const [orderId]  = useState(makeOrderId)
-  const [step, setStep] = useState<'offer' | 'qr' | 'confirming' | 'success' | 'error'>('offer')
+  const [orderId, setOrderId]       = useState<string>('')
+  const [orderAmount, setOrderAmount] = useState<number>(VIP_AMOUNT)
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
+  const [step, setStep] = useState<'offer' | 'form' | 'qr' | 'confirming' | 'success' | 'error'>('offer')
   const [errMsg, setErrMsg]   = useState('')
-  const [user] = useState<{ hoten: string; sdt: string; email: string } | null>(() => {
-    try { return JSON.parse(sessionStorage.getItem('vip_user') || 'null') } catch { return null }
-  })
-  const qrUrl = makeQrUrl(orderId)
+  const [formData, setFormData] = useState<{ hoten: string; sdt: string; email: string } | null>(null)
+  const qrUrl = orderId && paymentInfo ? makeQrUrl(orderId, orderAmount, paymentInfo) : ''
   const { expired, mm, ss } = useSessionCountdown()
 
   const handleUpgradeClick = useCallback(() => {
-    if (step === 'offer') setStep('qr')
-    // Scroll to CTA block
+    if (step === 'offer') setStep('form')
     document.getElementById('vip-cta')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [step])
 
+  async function handleFormSubmit(data: { hoten: string; sdt: string; email: string }) {
+    setFormData(data)
+    setStep('confirming')
+    try {
+      const res = await fetch('/api/vip/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: data.hoten, phone: data.sdt, email: data.email }),
+      })
+      const json = await res.json()
+      const code = json.order_code || json.order_id || json.id || makeOrderId()
+      setOrderId(code)
+      if (json.amount)   setOrderAmount(json.amount)
+      if (json.payment)  setPaymentInfo(json.payment)
+      setStep('qr')
+    } catch (e) {
+      console.error('Create order error:', e)
+      setOrderId(makeOrderId())
+      setStep('qr')
+    }
+  }
+
   async function handleConfirm() {
     setStep('confirming')
-    if (VIP_API_URL) {
-      try {
-        const res = await fetch(VIP_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, amount: VIP_AMOUNT, hoten: user?.hoten || '', sdt: user?.sdt || '', email: user?.email || '' }),
-        })
-        if (!res.ok) console.error('VIP API:', await res.text())
-      } catch (e) {
-        console.error('VIP API error:', e)
-      }
-    }
-    sessionStorage.removeItem('vip_user')
+    const purchaseEventId = `vip-purchase-${orderId}`
+    const fbc = document.cookie.split('; ').find(r => r.startsWith('_fbc='))?.split('=')[1]
+    const fbp = document.cookie.split('; ').find(r => r.startsWith('_fbp='))?.split('=')[1]
+
+    await Promise.all([
+      // External VIP API (lưu đơn)
+      VIP_API_URL ? fetch(VIP_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, amount: VIP_AMOUNT, hoten: formData?.hoten || '', sdt: formData?.sdt || '', email: formData?.email || '' }),
+      }).catch(e => console.error('VIP API error:', e)) : Promise.resolve(),
+
+      // CAPI Purchase (server-side, dedup với browser pixel)
+      fetch('/api/vip/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId, amount: VIP_AMOUNT,
+          hoten: formData?.hoten || '', sdt: formData?.sdt || '', email: formData?.email || '',
+          eventId: purchaseEventId,
+          fbc, fbp,
+          userAgent: navigator.userAgent,
+        }),
+      }).catch(e => console.error('CAPI error:', e)),
+    ])
+
+    pixel.purchase(VIP_AMOUNT, {
+      em: formData?.email,
+      ph: formData?.sdt,
+      fn: formData?.hoten,
+    }, purchaseEventId)
     setStep('success')
   }
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-cream deco-hatch-light">
       {/* Pink accent line — top (same as home) */}
       <div className="pointer-events-none fixed top-0 inset-x-0 h-px z-10" style={{ background: 'linear-gradient(90deg,transparent,#FF2D6F 30%,#FF2D6F 70%,transparent)' }} />
-      {/* Light hatch overlay */}
-      <div className="pointer-events-none fixed inset-0 deco-hatch-light" />
 
       {step !== 'success' && <StickyBar onUpgrade={handleUpgradeClick} />}
 
@@ -295,7 +341,7 @@ export default function Vip() {
           </div>
 
           {/* ═══ LETTER SECTION — 2 col ═══ */}
-          <div className="max-w-3xl mx-auto px-4 pt-10 pb-2">
+          <div className="max-w-3xl mx-auto px-4 pt-10 pb-8">
             <div className="flex flex-col sm:flex-row gap-8 items-start">
 
               {/* Copy — letter style */}
@@ -335,25 +381,6 @@ export default function Vip() {
               </div>
             </div>
           </div>
-
-          {/* ═══ TRANSITION CALLOUT ═══ */}
-          <div className="max-w-3xl mx-auto px-4 py-8">
-            <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: '#FFFFFF', border: '1px solid #E6E6EA', position: 'relative', zIndex: 1 }}>
-              <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg,#FF2D6F,#D81557)' }} />
-              <div className="px-8 py-8">
-                <p className="text-accent font-bold uppercase tracking-widest mb-4" style={{ fontSize: '0.72rem', letterSpacing: '0.18em' }}>Và đây là sự thật</p>
-                <h2 className="text-ink mb-5" style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", fontWeight: 800, fontSize: 'clamp(1.8rem,4.5vw,2.8rem)', lineHeight: 1.1, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
-                  Nghe webinar thôi<br />chưa đủ để anh chị thắng chắc
-                </h2>
-                <p className="text-ink" style={{ fontSize: '1.05rem', lineHeight: 1.8, maxWidth: '520px' }}>
-                  Hầu hết nghe xong — và không làm gì. Không phải vì họ lười. Mà vì <strong>không ai giúp họ bắt đầu từ đúng điểm,</strong> với <strong>đúng cách tiếp cận,</strong> cho đúng tệp khách hàng của họ.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* ═══ MID-PAGE INLINE CTA #1 ═══ */}
-          {!expired && <InlineCta onUpgrade={handleUpgradeClick} mm={mm} ss={ss} dark={false} />}
 
           {/* ═══ DARK STATS STRIP — 5 số ═══ */}
           <div className="relative overflow-hidden" style={{ background: '#0C0C0F' }}>
@@ -431,12 +458,66 @@ export default function Vip() {
             )
           })()}
 
+          {/* ═══ TRANSITION CALLOUT ═══ */}
+          <div className="max-w-3xl mx-auto px-4 py-8">
+            <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: '#FFFFFF', border: '1px solid #E6E6EA', position: 'relative', zIndex: 1 }}>
+              <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg,#FF2D6F,#D81557)' }} />
+              <div className="px-8 py-8">
+                <p className="text-accent font-bold uppercase tracking-widest mb-4" style={{ fontSize: '0.72rem', letterSpacing: '0.18em' }}>Và đây là sự thật</p>
+                <h2 className="text-ink mb-5" style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", fontWeight: 800, fontSize: 'clamp(1.8rem,4.5vw,2.8rem)', lineHeight: 1.1, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
+                  Nghe webinar thôi<br />chưa đủ để anh chị thắng chắc
+                </h2>
+                <p className="text-ink" style={{ fontSize: '1.05rem', lineHeight: 1.8, maxWidth: '520px' }}>
+                  Hầu hết nghe xong — và không làm gì. Không phải vì họ lười. Mà vì <strong>không ai giúp họ bắt đầu từ đúng điểm,</strong> với <strong>đúng cách tiếp cận,</strong> cho đúng tệp khách hàng của họ.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ MID-PAGE INLINE CTA #1 ═══ */}
+          {!expired && <InlineCta onUpgrade={handleUpgradeClick} mm={mm} ss={ss} dark={false} />}
+
+          {/* ═══ TRANSITION SECTION ═══ */}
+          <div className="max-w-3xl mx-auto px-4 pt-8 pb-8">
+            <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1px solid #E6E6EA', boxShadow: '0 4px 24px rgba(0,0,0,0.07)', position: 'relative', zIndex: 1 }}>
+              {/* Image — full width top, extends below to overlap copy */}
+              <div className="relative w-full" style={{ height: '260px', marginBottom: '-60px' }}>
+                <img
+                  src="assets/transition-depress.jpg"
+                  alt=""
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: 'center 40%', filter: 'brightness(0.82)' }}
+                  loading="lazy"
+                />
+                {/* Gradient overlay — fades fully to white */}
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 20%, rgba(255,255,255,0.6) 60%, #FFFFFF 100%)' }} />
+              </div>
+
+              {/* Copy */}
+              <div className="px-7 pb-8 pt-4 space-y-4" style={{ fontSize: '1.075rem', lineHeight: 1.85, color: '#0E0E10', position: 'relative', zIndex: 1 }}>
+                <p>Triết thấy điều đó lặp đi lặp lại.</p>
+                <p>
+                  Nghe xong, gật đầu, hiểu rồi — rồi về mở laptop và <strong>không biết bắt đầu từ đâu.</strong>{' '}
+                  Không phải vì nội dung không hay. Mà vì không ai ngồi xuống cùng anh chị, nhìn vào đúng case của anh chị, và nói:{' '}
+                  <span className="text-accent font-semibold">"Bắt đầu từ chỗ này."</span>
+                </p>
+                <p>
+                  Đó là lý do Triết tạo ra slot VIP lần này.
+                </p>
+                <p>
+                  Không phải để bán thêm. Mà để anh chị ra về với{' '}
+                  <strong>một điểm bắt đầu cụ thể — cho đúng tệp, đúng sản phẩm, đúng giai đoạn</strong> anh chị đang ở.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* ═══ BENEFITS + PROOF — cream bg ═══ */}
           <div className="max-w-3xl mx-auto px-4 py-8">
 
             {/* Section label */}
             <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-1" style={{ background: 'rgba(255,45,111,0.1)', border: '1px solid rgba(255,45,111,0.25)' }}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-1" style={{ background: '#FFE4EC', border: '1px solid rgba(255,45,111,0.25)' }}>
                 <span className="text-accent font-black uppercase" style={{ fontFamily: "'Inter',sans-serif", fontSize: '0.72rem', letterSpacing: '0.2em' }}>Anh chị nhận được</span>
               </div>
             </div>
@@ -446,8 +527,8 @@ export default function Vip() {
               {BENEFITS_RICH.map((b) => (
                 <div key={b.num} className="rounded-2xl overflow-hidden"
                   style={b.hot
-                    ? { background: '#0C0C0F', border: '1.5px solid #FF2D6F', boxShadow: '0 4px 24px rgba(255,45,111,0.18)' }
-                    : { background: '#FFFFFF', border: '1px solid #E6E6EA', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }
+                    ? { background: '#0C0C0F', border: '1.5px solid #FF2D6F', boxShadow: '0 4px 24px rgba(255,45,111,0.18)', position: 'relative', zIndex: 1 }
+                    : { background: '#FFFFFF', border: '1px solid #E6E6EA', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'relative', zIndex: 1 }
                   }>
                   <div className="px-6 py-5">
                     {/* Top row: num + emoji + badge + value */}
@@ -564,14 +645,14 @@ export default function Vip() {
               {step === 'offer' && !expired && (
                 <>
                   <button
-                    onClick={() => setStep('qr')}
+                    onClick={() => setStep('form')}
                     className="btn-cta w-full text-center text-paper rounded-xl py-4 text-lg transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer mb-3"
                     style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 8px 32px rgba(255,45,111,0.4)' }}
                   >
                     Tôi muốn nâng lên VIP — 499k →
                   </button>
                   <p className="text-paper/80 text-center leading-relaxed" style={{ fontSize: '1rem' }}>
-                    Bấm → hệ thống tự tạo QR · chuyển khoản → bấm xác nhận · hệ thống tự động cấp quyền VIP ngay lập tức.
+                    Bấm → điền thông tin → hệ thống tạo QR · chuyển khoản → bấm xác nhận · hệ thống tự động cấp quyền VIP ngay lập tức.
                   </p>
                 </>
               )}
@@ -583,7 +664,8 @@ export default function Vip() {
                   </a>
                 </div>
               )}
-              {step === 'qr' && <QrStep qrUrl={qrUrl} orderId={orderId} onConfirm={handleConfirm} />}
+              {step === 'form' && <FormStep onSubmit={handleFormSubmit} />}
+              {step === 'qr' && <QrStep qrUrl={qrUrl} orderId={orderId} amount={orderAmount} payment={paymentInfo} onConfirm={handleConfirm} />}
               {step === 'confirming' && (
                 <div className="flex flex-col items-center gap-3 py-4">
                   <div className="w-7 h-7 border-2 border-accent border-t-transparent rounded-full animate-spin" />
@@ -625,13 +707,98 @@ export default function Vip() {
   )
 }
 
+/* ── Form Step ───────────────────────────────────────────────────────────── */
+function FormStep({ onSubmit }: { onSubmit: (data: { hoten: string; sdt: string; email: string }) => Promise<void> }) {
+  const [hoten, setHoten]   = useState('')
+  const [sdt, setSdt]       = useState('')
+  const [email, setEmail]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<{ hoten?: string; sdt?: string; email?: string }>({})
+
+  function validate() {
+    const e: typeof errors = {}
+    if (!hoten.trim()) e.hoten = 'Vui lòng nhập họ tên'
+    if (!sdt.trim() || !/^0\d{9}$/.test(sdt.replace(/\s/g, ''))) e.sdt = 'Số điện thoại không hợp lệ'
+    if (!email.trim() || !email.includes('@')) e.email = 'Email không hợp lệ'
+    return e
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const errs = validate()
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    setLoading(true)
+    await onSubmit({ hoten: hoten.trim(), sdt: sdt.replace(/\s/g, ''), email: email.trim().toLowerCase() })
+    setLoading(false)
+  }
+
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.07)',
+    border: '1px solid rgba(255,255,255,0.18)',
+    borderRadius: '0.75rem',
+    color: '#FFFFFF',
+    fontSize: '1rem',
+    padding: '0.8rem 1rem',
+    width: '100%',
+    outline: 'none',
+  }
+  const labelStyle = { fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.65)', marginBottom: '0.35rem', display: 'block' as const }
+  const errStyle = { fontSize: '0.82rem', color: '#FF6B8A', marginTop: '0.3rem' }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <p className="text-paper/75 text-center leading-relaxed" style={{ fontSize: '0.95rem' }}>
+        Điền thông tin để hệ thống tạo đơn và gửi QR chuyển khoản.
+      </p>
+
+      <div>
+        <label style={labelStyle}>Họ và tên *</label>
+        <input
+          type="text" value={hoten} onChange={e => { setHoten(e.target.value); setErrors(v => ({ ...v, hoten: undefined })) }}
+          placeholder="Nguyễn Văn A" style={inputStyle} autoComplete="name"
+        />
+        {errors.hoten && <p style={errStyle}>{errors.hoten}</p>}
+      </div>
+
+      <div>
+        <label style={labelStyle}>Số điện thoại *</label>
+        <input
+          type="tel" value={sdt} onChange={e => { setSdt(e.target.value); setErrors(v => ({ ...v, sdt: undefined })) }}
+          placeholder="0912 345 678" style={inputStyle} autoComplete="tel"
+        />
+        {errors.sdt && <p style={errStyle}>{errors.sdt}</p>}
+      </div>
+
+      <div>
+        <label style={labelStyle}>Email *</label>
+        <input
+          type="email" value={email} onChange={e => { setEmail(e.target.value); setErrors(v => ({ ...v, email: undefined })) }}
+          placeholder="email@gmail.com" style={inputStyle} autoComplete="email"
+        />
+        {errors.email && <p style={errStyle}>{errors.email}</p>}
+      </div>
+
+      <button
+        type="submit" disabled={loading}
+        className="btn-cta w-full text-center text-paper rounded-xl py-4 text-lg transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+        style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 8px 32px rgba(255,45,111,0.4)' }}
+      >
+        {loading
+          ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Đang tạo đơn...</>
+          : 'Tiếp tục — nhận QR chuyển khoản →'}
+      </button>
+    </form>
+  )
+}
+
 /* ── QR Step ─────────────────────────────────────────────────────────────── */
-function QrStep({ qrUrl, orderId, onConfirm }: { qrUrl: string; orderId: string; onConfirm: () => void }) {
+function QrStep({ qrUrl, orderId, amount, payment, onConfirm }: {
+  qrUrl: string; orderId: string; amount: number; payment: PaymentInfo | null; onConfirm: () => void
+}) {
   const [copied, setCopied] = useState(false)
-  const desc = `VIPWB ${orderId}`
 
   function copyDesc() {
-    navigator.clipboard.writeText(desc).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+    navigator.clipboard.writeText(orderId).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
   }
 
   return (
@@ -641,29 +808,29 @@ function QrStep({ qrUrl, orderId, onConfirm }: { qrUrl: string; orderId: string;
         <p className="text-paper"><strong>Bước 2</strong> — Bấm <span className="text-accent font-bold">"Tôi đã chuyển khoản"</span> — hệ thống tự động cấp quyền VIP trong 15–30 phút.</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center">
+      <div className="flex gap-4 items-start">
         {/* QR */}
-        <div className="shrink-0 w-44 h-44 rounded-2xl overflow-hidden bg-white flex items-center justify-center shadow-lg">
+        <div className="shrink-0 rounded-2xl overflow-hidden bg-white flex items-center justify-center shadow-lg" style={{ width: '45%', aspectRatio: '1/1' }}>
           {qrUrl ? (
             <img src={qrUrl} alt="QR chuyển khoản VIP" className="w-full h-full object-contain" />
           ) : (
-            <div className="text-center p-3 text-gray-300 text-xs leading-relaxed font-medium">[ QR sẽ hiện<br />sau khi cấu hình ]</div>
+            <div className="text-center p-3 text-gray-400 text-sm font-medium">Đang tải QR...</div>
           )}
         </div>
 
         {/* Info */}
-        <div className="flex-1 space-y-3 w-full">
-          <InfoRow label="Ngân hàng" value={BANK_CODE} placeholder={!import.meta.env.VITE_BANK_CODE} />
-          <InfoRow label="Số tài khoản" value={BANK_ACCOUNT} placeholder={!import.meta.env.VITE_BANK_ACCOUNT} />
-          <InfoRow label="Chủ tài khoản" value={BANK_NAME} placeholder={!import.meta.env.VITE_BANK_NAME} />
-          <InfoRow label="Số tiền" value={`${VIP_AMOUNT.toLocaleString('vi-VN')}đ`} highlight />
+        <div className="flex-1 space-y-3 min-w-0">
+          <InfoRow label="Ngân hàng" value={payment?.bank_name ?? '—'} />
+          <InfoRow label="Số tài khoản" value={payment?.account_number ?? '—'} />
+          <InfoRow label="Chủ tài khoản" value={payment?.account_name ?? '—'} />
+          <InfoRow label="Số tiền" value={`${amount.toLocaleString('vi-VN')}đ`} highlight />
           <div>
-            <div className="text-paper/70 font-semibold mb-1" style={{ fontSize: '0.85rem' }}>Nội dung chuyển khoản</div>
+            <div className="text-paper/70 font-semibold mb-1" style={{ fontSize: '0.85rem' }}>Nội dung CK</div>
             <button onClick={copyDesc} className="flex items-center gap-2 w-full text-left rounded-lg px-3 py-2.5 cursor-pointer transition-all hover:border-white/30" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
-              <span className="text-paper font-mono font-bold flex-1" style={{ fontSize: '1rem' }}>{desc}</span>
-              <span className="text-paper/75 shrink-0 font-semibold" style={{ fontSize: '0.9rem' }}>{copied ? '✓ Đã copy' : 'Bấm để copy'}</span>
+              <span className="text-paper font-mono font-bold flex-1 truncate" style={{ fontSize: '0.9rem' }}>{orderId}</span>
+              <span className="text-paper/75 shrink-0 font-semibold text-xs">{copied ? '✓ Copy' : 'Copy'}</span>
             </button>
-            <p className="text-paper/65 italic mt-1" style={{ fontSize: '0.9rem' }}>* Nhập đúng nội dung để hệ thống xác nhận nhanh</p>
+            <p className="text-paper/65 italic mt-1" style={{ fontSize: '0.8rem' }}>* Nhập đúng nội dung để hệ thống xác nhận nhanh</p>
           </div>
         </div>
       </div>
@@ -701,8 +868,7 @@ function SuccessState({ orderId }: { orderId: string }) {
     setChecking(true)
     setNotYet(false)
     try {
-      const base = VIP_API_URL.replace('/confirm', '')
-      const res = await fetch(`${base}/check?orderId=${orderId}`)
+      const res = await fetch(`/api/vip/order-status?code=${encodeURIComponent(orderId)}`)
       if (res.ok) {
         const data = await res.json()
         if (data.confirmed) { setConfirmed(true); return }

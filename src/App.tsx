@@ -491,14 +491,14 @@ export default function App() {
           Không có gì cả — ngoài <strong className="font-black">1 công thức Triết sẽ chia sẻ trong webinar này</strong>.
         </p>
         <p className="text-sm md:text-base leading-relaxed">
-          Kết quả: <strong className="font-black">trăm mấy triệu/tháng đều đều 8 tháng · tổng 1 tỷ · tự động 100%</strong>.
+          Kết quả: <strong className="font-black">trăm mấy triệu/tháng đều đều 8 tháng · tổng 1 tỷ 8 · tự động 100%</strong>.
         </p>
         <p className="text-sm md:text-base leading-relaxed">
           Nếu cậu em 22 tuổi làm được — anh chị không có lý do gì không làm được.
         </p>
         <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-paper/20">
-          <div className="rounded-lg overflow-hidden cursor-zoom-in" style={{aspectRatio:"16/9"}} onClick={() => openLightbox('assets/case-study-youtube.png', 'Dashboard MONA — doanh thu tự động 8 tháng')}>
-            <img src="assets/case-study-youtube.png" alt="Dashboard MONA — doanh thu tự động 8 tháng" className="w-full h-full object-cover object-top" />
+          <div className="rounded-lg overflow-hidden cursor-zoom-in" style={{aspectRatio:"16/9"}} onClick={() => openLightbox('assets/case-study-baocao.png', 'Dashboard MONA — doanh thu tự động 8 tháng')}>
+            <img src="assets/case-study-baocao.png" alt="Dashboard MONA — doanh thu tự động 8 tháng" className="w-full h-full object-cover object-top" />
           </div>
           <div className="rounded-lg overflow-hidden cursor-zoom-in" style={{aspectRatio:"16/9"}} onClick={() => openLightbox('assets/bao-cao-elearning-2.png', 'Tháng 3 x3, tháng 4 x4 doanh số')}>
             <img src="assets/bao-cao-elearning-2.png" alt="Tháng 3 x3, tháng 4 x4 doanh số" className="w-full h-full object-cover object-top" />

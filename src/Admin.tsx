@@ -26,11 +26,16 @@ interface SubmitLog {
   id: number; name: string; email: string; phone: string
   city: string; clinic_name: string; submitted_at: string
 }
-type Tab = 'users' | 'submit-logs' | 'analytics' | 'email-templates'
+type Tab = 'users' | 'submit-logs' | 'orders' | 'analytics' | 'email-templates'
 
 interface EmailTemplate {
   id: number; name: string; subject: string; body: string; is_active: boolean
   created_at?: string; updated_at?: string
+}
+
+interface Order {
+  id: number; order_code: string; name: string; phone: string; email: string
+  amount: number; status: string; created_at: string; updated_at?: string
 }
 
 // ─── API wrapper ─────────────────────────────────────────────────────────────
@@ -393,6 +398,165 @@ function SubmitLogsTab() {
                 </div>
               </div>
             ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Orders Tab ───────────────────────────────────────────────────────────────
+function OrdersTab() {
+  const [data, setData]       = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch]   = useState('')
+  const [completing, setCompleting] = useState<number | null>(null)
+  const [toastMsg, setToastMsg] = useState('')
+
+  const toast = (msg: string) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000) }
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const r = await api<{ data: Order[] } | Order[]>('/admin/orders')
+      const list = Array.isArray(r) ? r : (r as { data: Order[] }).data ?? []
+      setData(list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+    } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filtered = data.filter(o => !search ? true :
+    ['name','email','phone','order_code'].some(k => (o as unknown as Record<string,unknown>)[k]?.toString().toLowerCase().includes(search.toLowerCase())))
+
+  async function handleComplete(id: number) {
+    setCompleting(id)
+    try {
+      await api(`/admin/orders/${id}/complete`, { method: 'POST' })
+      toast('Đã xác nhận hoàn thành — email đã gửi cho khách')
+      load()
+    } catch (err: unknown) {
+      toast((err as Error).message)
+    } finally { setCompleting(null) }
+  }
+
+  const statusBadge = (s: string) => {
+    const map: Record<string, string> = {
+      pending:   'bg-amber-100 text-amber-700',
+      completed: 'bg-emerald-100 text-emerald-700',
+      cancelled: 'bg-red-100 text-red-600',
+    }
+    const labels: Record<string, string> = { pending: 'Chờ xác nhận', completed: 'Hoàn thành', cancelled: 'Đã hủy' }
+    return (
+      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[s] ?? 'bg-slate-100 text-slate-500'}`}>
+        {labels[s] ?? s}
+      </span>
+    )
+  }
+
+  const exportData = () => filtered.map(o => ({
+    'Mã đơn': o.order_code, 'Tên': o.name, 'SĐT': o.phone, 'Email': o.email,
+    'Số tiền': o.amount, 'Trạng thái': o.status,
+    'Ngày tạo': new Date(o.created_at).toLocaleString('vi-VN'),
+  }))
+
+  return (
+    <div className="space-y-4">
+      {toastMsg && (
+        <div className="fixed top-4 right-4 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl text-sm font-semibold animate-in">
+          {toastMsg}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Tìm tên, email, SĐT, mã đơn..."
+          className="flex-1 min-w-48 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400" />
+        <button onClick={load} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+          Tải lại
+        </button>
+        <ExportDropdown
+          onCSV={() => exportCSV(exportData() as Record<string, unknown>[], `orders-${Date.now()}.csv`)}
+          onXLSX={() => exportXLSX(exportData() as Record<string, unknown>[], `orders-${Date.now()}.xlsx`)}
+        />
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 text-sm text-slate-500 px-4 py-2">
+        {loading ? 'Đang tải...' : `${filtered.length} đơn hàng`}
+      </div>
+
+      {loading ? (
+        <div className="text-center py-16 text-slate-400">Đang tải...</div>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  {['Mã đơn','Tên','Liên hệ','Số tiền','Trạng thái','Ngày tạo',''].map(h => (
+                    <th key={h} className="text-left px-4 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map(o => (
+                  <tr key={o.id} className="hover:bg-slate-50 transition">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{o.order_code}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-900">{o.name}</td>
+                    <td className="px-4 py-3 text-slate-600">
+                      <p>{o.phone}</p>
+                      <p className="text-xs text-slate-400">{o.email}</p>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-800">{o.amount.toLocaleString('vi-VN')}đ</td>
+                    <td className="px-4 py-3">{statusBadge(o.status)}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">{new Date(o.created_at).toLocaleString('vi-VN')}</td>
+                    <td className="px-4 py-3">
+                      {o.status === 'pending' && (
+                        <button
+                          onClick={() => handleComplete(o.id)}
+                          disabled={completing === o.id}
+                          className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer"
+                        >
+                          {completing === o.id ? '...' : 'Hoàn thành'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!filtered.length && <div className="text-center py-12 text-slate-400">Không có đơn hàng nào</div>}
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.map(o => (
+              <div key={o.id} className="bg-white rounded-xl border border-slate-200 p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-semibold text-slate-900">{o.name}</p>
+                    <p className="text-xs font-mono text-slate-400">{o.order_code}</p>
+                  </div>
+                  {statusBadge(o.status)}
+                </div>
+                <div className="space-y-1 text-sm text-slate-600 mb-3">
+                  <p>{o.phone} · {o.email}</p>
+                  <p className="font-semibold text-slate-800">{o.amount.toLocaleString('vi-VN')}đ</p>
+                  <p className="text-xs text-slate-400">{new Date(o.created_at).toLocaleString('vi-VN')}</p>
+                </div>
+                {o.status === 'pending' && (
+                  <button
+                    onClick={() => handleComplete(o.id)}
+                    disabled={completing === o.id}
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-semibold py-2 rounded-lg transition"
+                  >
+                    {completing === o.id ? 'Đang xử lý...' : 'Xác nhận hoàn thành'}
+                  </button>
+                )}
+              </div>
+            ))}
+            {!filtered.length && <div className="text-center py-8 text-slate-400">Không có đơn hàng nào</div>}
           </div>
         </>
       )}
@@ -1292,7 +1456,7 @@ function LoginPage({ onLogin }: { onLogin: () => void }) {
 function Dashboard({ onLogout }: { onLogout: () => void }) {
   const getTabFromHash = (): Tab => {
     const h = window.location.hash.slice(1) as Tab
-    return (['users', 'submit-logs', 'analytics', 'email-templates'] as Tab[]).includes(h) ? h : 'users'
+    return (['users', 'submit-logs', 'orders', 'analytics', 'email-templates'] as Tab[]).includes(h) ? h : 'users'
   }
   const [tab, setTab] = useState<Tab>(getTabFromHash)
 
@@ -1304,14 +1468,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  const tabLabels: Record<Tab, string> = { users: 'Học viên', 'submit-logs': 'Lịch sử đăng ký', analytics: 'Analytics', 'email-templates': 'Email Templates' }
+  const tabLabels: Record<Tab, string> = { users: 'Học viên', 'submit-logs': 'Lịch sử đăng ký', orders: 'Đơn VIP', analytics: 'Analytics', 'email-templates': 'Email Templates' }
 
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
           <nav className="flex gap-1 overflow-x-auto">
-            {(['users', 'submit-logs', 'analytics', 'email-templates'] as Tab[]).map(t => (
+            {(['users', 'submit-logs', 'orders', 'analytics', 'email-templates'] as Tab[]).map(t => (
               <button key={t} onClick={() => switchTab(t)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${tab === t ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
                 {tabLabels[t]}
@@ -1322,7 +1486,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {tab === 'users' ? <UsersTab /> : tab === 'submit-logs' ? <SubmitLogsTab /> : tab === 'analytics' ? <AnalyticsTab /> : <EmailTemplatesTab />}
+        {tab === 'users' ? <UsersTab /> : tab === 'submit-logs' ? <SubmitLogsTab /> : tab === 'orders' ? <OrdersTab /> : tab === 'analytics' ? <AnalyticsTab /> : <EmailTemplatesTab />}
       </main>
     </div>
   )
