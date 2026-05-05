@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!code) return res.status(400).json({ error: 'Thiếu order code' })
 
   try {
-    const r = await fetch(`https://kha-webinar.mona.academy/api/orders/${code}`, {
+    const r = await fetch(`${process.env.KHA_API_URL}/api/orders/${code}`, {
       headers: { 'X-API-Key': process.env.KHA_API_KEY! },
     })
     if (r.status === 404) return res.status(404).json({ error: 'Không tìm thấy đơn' })

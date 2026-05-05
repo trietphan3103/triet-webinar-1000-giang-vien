@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!name || !phone || !email) return res.status(400).json({ error: 'Thiếu thông tin' })
 
   try {
-    const khaRes = await fetch('https://kha-webinar.mona.academy/api/orders', {
+    const khaRes = await fetch(`${process.env.KHA_API_URL}/api/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

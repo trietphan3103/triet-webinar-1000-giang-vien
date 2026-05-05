@@ -282,7 +282,7 @@ app.post('/api/vip/create-order', async (req, res) => {
     const { name, phone, email } = req.body
     if (!name || !phone || !email) return res.status(400).json({ error: 'Thiếu thông tin' })
 
-    const khaRes = await fetch('https://kha-webinar.mona.academy/api/orders', {
+    const khaRes = await fetch(`${process.env.KHA_API_URL}/api/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -305,7 +305,7 @@ app.get('/api/vip/order-status', async (req, res) => {
   const code = req.query.code as string
   if (!code) return res.status(400).json({ error: 'Thiếu order code' })
   try {
-    const r = await fetch(`https://kha-webinar.mona.academy/api/orders/${code}`, {
+    const r = await fetch(`${process.env.KHA_API_URL}/api/orders/${code}`, {
       headers: { 'X-API-Key': process.env.KHA_API_KEY! },
     })
     if (r.status === 404) return res.status(404).json({ error: 'Không tìm thấy đơn' })
