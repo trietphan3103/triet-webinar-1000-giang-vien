@@ -406,8 +406,27 @@ app.post('/api/broadcast', async (req, res) => {
 // ─── Serve SPA ────────────────────────────────────────────────────────────────
 
 const distDir = join(__dirname, 'dist')
-app.use(express.static(distDir))
-app.get('*', (_req, res) => res.sendFile(join(distDir, 'index.html')))
+
+// Hashed assets (JS, CSS, images) — cache 1 năm, immutable
+app.use('/assets', express.static(join(distDir, 'assets'), {
+  maxAge: '1y',
+  immutable: true,
+}))
+
+// Tất cả file tĩnh còn lại — no-cache (index.html, favicon, v.v.)
+app.use(express.static(distDir, {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    }
+  },
+}))
+
+// SPA fallback — luôn trả index.html mới nhất, không cache
+app.get('*', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+  res.sendFile(join(distDir, 'index.html'))
+})
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 

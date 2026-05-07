@@ -15,6 +15,7 @@
     "start:prod": "npm run build && npm start"
   },
   "dependencies": {
+    "tsx": "^4.19.2",
     "@tiptap/extension-color": "^3.22.5",
     "@tiptap/extension-image": "^3.22.5",
     "@tiptap/extension-link": "^3.22.5",
@@ -43,7 +44,6 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.0.0",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
   }

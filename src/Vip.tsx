@@ -45,52 +45,64 @@ function useSessionCountdown() {
   return { remaining, mm, ss, expired: false }  // không bao giờ expired
 }
 
-/* ── Sticky countdown bar — floating popper full-container ───────────────── */
+/* ── Sticky countdown bar ────────────────────────────────────────────────── */
 function StickyBar({ onUpgrade }: { onUpgrade: () => void }) {
   const { mm, ss } = useSessionCountdown()
   return (
-    <div style={{ position: 'fixed', bottom: '1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 50, width: '100%', maxWidth: '48rem', padding: '0 1rem' }}>
-      <div className="flex items-center justify-between gap-4 px-7 py-4 rounded-2xl w-full"
-        style={{ background: 'rgb(255,255,255)', border: '1.5px solid rgba(0,0,0,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.28), 0 4px 16px rgba(0,0,0,0.12)' }}>
+    /* Outer: fixed full-width, transparent — chỉ để position */
+    <div className="fixed bottom-3 inset-x-0 z-50 pointer-events-none">
+      {/* Inner: cùng container với content sections — max-w-4xl mx-auto px-4 */}
+      <div className="max-w-4xl mx-auto px-4 pointer-events-auto">
+        <div className="flex items-center gap-1.5 sm:gap-6 px-2 sm:px-8 py-2 sm:py-3.5 rounded-2xl overflow-hidden justify-between sm:justify-center"
+          style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,0.1)', boxShadow: '0 8px 40px rgba(0,0,0,0.2),0 2px 12px rgba(0,0,0,0.08)' }}>
 
-        {/* Label */}
-        <p className="font-black uppercase shrink-0"
-          style={{ fontSize: 'clamp(0.75rem,1.8vw,1rem)', letterSpacing: '0.14em', fontFamily: "'Inter',sans-serif", lineHeight: 1.3, color: '#0E0E10', fontWeight: 900 }}>
-          Nâng VIP<br />đóng trong
-        </p>
+          {/* Label — hidden on xs, visible sm+ */}
+          <p className="hidden sm:block shrink-0 font-black uppercase leading-tight"
+            style={{ fontFamily: "'Inter',sans-serif", fontSize: 'clamp(0.6rem,1.8vw,0.72rem)', letterSpacing: '0.07em', color: '#0E0E10' }}>
+            Nâng VIP<br />đóng trong
+          </p>
 
-        <div className="w-px self-stretch bg-ink/15 shrink-0" />
+          <div className="hidden sm:block w-px self-stretch shrink-0" style={{ background: 'rgba(0,0,0,0.12)' }} />
 
-        {/* Digits — center */}
-        <div className="flex items-end gap-2 flex-1 justify-center shrink-0">
-          {[{ v: mm, label: 'Phút' }, { v: ss, label: 'Giây' }].map(({ v, label }, i) => (
-            <div key={i} className="flex items-end gap-2">
-              <div className="text-center">
-                <div className="font-black tabular-nums leading-none text-ink"
-                  style={{ fontSize: 'clamp(2.4rem,7vw,3.5rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", letterSpacing: '-0.02em' }}>
-                  {v}
+          {/* Mobile-only VIP badge */}
+          <span className="sm:hidden shrink-0 text-white font-black uppercase rounded-md"
+            style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", fontSize: '0.65rem', letterSpacing: '0.1em', background: '#0E0E10', padding: '2px 6px' }}>
+            VIP
+          </span>
+
+          {/* Timer */}
+          <div className="flex items-end gap-0.5 sm:gap-2 flex-1 sm:flex-none min-w-0 justify-center">
+            {[{ v: mm, label: 'Phút' }, { v: ss, label: 'Giây' }].map(({ v, label }, i) => (
+              <div key={i} className="flex items-end gap-0.5 sm:gap-1">
+                <div className="text-center">
+                  <div className="font-black leading-none tabular-nums"
+                    style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", fontSize: 'clamp(1.25rem,4.5vw,3rem)', color: '#0E0E10' }}>
+                    {v}
+                  </div>
+                  <div className="font-bold uppercase"
+                    style={{ fontFamily: "'Inter',sans-serif", fontSize: 'clamp(0.48rem,1.2vw,0.58rem)', letterSpacing: '0.06em', color: '#FF2D6F' }}>
+                    {label}
+                  </div>
                 </div>
-                <div className="font-bold uppercase text-accent tracking-widest" style={{ fontSize: '0.65rem' }}>{label}</div>
+                {i === 0 && (
+                  <div className="font-black self-center"
+                    style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", fontSize: 'clamp(0.9rem,3.5vw,2.5rem)', color: 'rgba(14,14,16,0.2)', marginBottom: '0.35rem' }}>
+                    :
+                  </div>
+                )}
               </div>
-              {i === 0 && (
-                <div className="font-black text-ink/25 leading-none pb-6"
-                  style={{ fontSize: 'clamp(2rem,6vw,3rem)', fontFamily: "'Barlow Semi Condensed',sans-serif" }}>
-                  :
-                </div>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <div className="w-px self-stretch shrink-0" style={{ background: 'rgba(0,0,0,0.12)' }} />
+
+          {/* CTA */}
+          <button onClick={onUpgrade}
+            className="shrink-0 text-white font-black italic uppercase cursor-pointer rounded-lg transition-all hover:opacity-90 active:scale-[0.97]"
+            style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", letterSpacing: '0.04em', background: 'linear-gradient(135deg,#FF2D6F,#D81557)', boxShadow: '0 4px 14px rgba(255,45,111,0.4)', border: 'none', fontSize: 'clamp(0.65rem,2vw,0.78rem)', padding: '0.38rem 0.65rem', whiteSpace: 'nowrap' }}>
+            Nâng VIP →
+          </button>
         </div>
-
-        <div className="w-px self-stretch bg-ink/15 shrink-0" />
-
-        {/* CTA */}
-        <button
-          onClick={onUpgrade}
-          className="shrink-0 text-white rounded-xl cursor-pointer transition-all hover:opacity-90 active:scale-[0.97]"
-          style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 6px 24px rgba(255,45,111,0.5)', fontFamily: "'Barlow Semi Condensed',sans-serif", fontWeight: 800, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 'clamp(1rem,2.8vw,1.3rem)', padding: 'clamp(0.6rem,1.5vw,0.85rem) clamp(1.2rem,3vw,2rem)' }}>
-          Nâng lên VIP →
-        </button>
       </div>
     </div>
   )
@@ -176,46 +188,77 @@ const BENEFITS_RICH = [
 
 /* ── Inline CTA — same style as sticky bar ───────────────────────────────── */
 function InlineCta({ onUpgrade, mm, ss, dark, flush }: { onUpgrade: () => void; mm: string; ss: string; dark: boolean; flush?: boolean }) {
+  const divBg = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'
+  const textColor = dark ? '#FFFFFF' : '#0E0E10'
+
+  /* Timer block — shared between mobile & desktop */
+  const TimerBlock = () => (
+    <div className="flex items-end gap-2">
+      {[{ v: mm, label: 'Phút' }, { v: ss, label: 'Giây' }].map(({ v, label }, i) => (
+        <div key={i} className="flex items-end gap-2">
+          <div className="text-center">
+            <div className="font-black tabular-nums leading-none"
+              style={{ fontSize: 'clamp(2rem,4.5vw,2.8rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", letterSpacing: '-0.02em', color: textColor }}>
+              {v}
+            </div>
+            <div className="font-bold uppercase text-accent" style={{ fontSize: '0.6rem', letterSpacing: '0.1em', marginTop: '2px' }}>{label}</div>
+          </div>
+          {i === 0 && (
+            <div className="font-black leading-none pb-5 shrink-0"
+              style={{ fontSize: 'clamp(1.8rem,3.5vw,2.4rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", color: dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.18)' }}>
+              :
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+
   return (
-    <div className={`max-w-3xl mx-auto pb-4 ${flush ? '' : 'px-4'}`}>
-      <div className="flex items-center justify-between gap-4 px-6 py-4 rounded-2xl"
+    <div className={`max-w-4xl mx-auto pb-4 ${flush ? '' : 'px-4'}`}>
+      <div className="rounded-2xl overflow-hidden"
         style={dark
           ? { background: '#0C0C0F', border: '1.5px solid rgba(255,45,111,0.25)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', position: 'relative', zIndex: 1 }
           : { background: '#FFFFFF', border: '1px solid #E6E6EA', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'relative', zIndex: 1 }
         }>
-        {/* Label */}
-        <p className="font-black uppercase shrink-0"
-          style={{ fontSize: '0.75rem', letterSpacing: '0.14em', fontFamily: "'Inter',sans-serif", lineHeight: 1.3, color: dark ? '#FFFFFF' : '#0E0E10', fontWeight: 900 }}>
-          Nâng VIP<br />đóng trong
-        </p>
-        <div className="w-px h-8 shrink-0" style={{ background: dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />
-        {/* Digits */}
-        <div className="flex items-end gap-1.5 flex-1 justify-center shrink-0">
-          {[{ v: mm, label: 'Phút' }, { v: ss, label: 'Giây' }].map(({ v, label }, i) => (
-            <div key={i} className="flex items-end gap-1.5">
-              <div className="text-center">
-                <div className="font-black tabular-nums leading-none"
-                  style={{ fontSize: 'clamp(1.8rem,5vw,2.6rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", letterSpacing: '-0.02em', color: dark ? '#FFFFFF' : '#0E0E10' }}>
-                  {v}
-                </div>
-                <div className="font-bold uppercase text-accent tracking-widest" style={{ fontSize: '0.58rem' }}>{label}</div>
-              </div>
-              {i === 0 && (
-                <div className="font-black leading-none pb-5"
-                  style={{ fontSize: 'clamp(1.6rem,4vw,2.2rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", color: dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)' }}>
-                  :
-                </div>
-              )}
+
+        {/* ── MOBILE layout (< sm): label + timer row, then full-width button ── */}
+        <div className="sm:hidden">
+          <div className="flex items-center gap-3 px-5 pt-4 pb-3">
+            <p className="font-black uppercase shrink-0 leading-snug"
+              style={{ fontSize: '0.75rem', letterSpacing: '0.14em', fontFamily: "'Inter',sans-serif", color: textColor, fontWeight: 900 }}>
+              Nâng VIP<br />đóng trong
+            </p>
+            <div className="w-px h-8 shrink-0" style={{ background: divBg }} />
+            <div className="flex-1 flex justify-center">
+              <TimerBlock />
             </div>
-          ))}
+          </div>
+          <div className="px-5 pb-4">
+            <button onClick={onUpgrade}
+              className="block w-full text-center text-white rounded-xl cursor-pointer transition-all hover:opacity-90 active:scale-[0.97]"
+              style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 4px 16px rgba(255,45,111,0.4)', fontFamily: "'Barlow Semi Condensed',sans-serif", fontWeight: 800, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '1rem', padding: '0.65rem 1.4rem' }}>
+              Nâng lên VIP →
+            </button>
+          </div>
         </div>
-        <div className="w-px h-8 shrink-0" style={{ background: dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)' }} />
-        {/* CTA */}
-        <button onClick={onUpgrade}
-          className="shrink-0 text-white rounded-xl cursor-pointer transition-all hover:opacity-90 active:scale-[0.97]"
-          style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 4px 16px rgba(255,45,111,0.4)', fontFamily: "'Barlow Semi Condensed',sans-serif", fontWeight: 800, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 'clamp(0.9rem,2.5vw,1.1rem)', padding: '0.6rem 1.4rem' }}>
-          Nâng lên VIP →
-        </button>
+
+        {/* ── DESKTOP layout (sm+): all centered as one compact group ── */}
+        <div className="hidden sm:flex items-center justify-center py-5 gap-6">
+          <p className="font-black uppercase leading-snug shrink-0"
+            style={{ fontSize: '0.78rem', letterSpacing: '0.14em', fontFamily: "'Inter',sans-serif", color: textColor, fontWeight: 900 }}>
+            Nâng VIP<br />đóng trong
+          </p>
+          <div className="w-px h-10 shrink-0" style={{ background: divBg }} />
+          <TimerBlock />
+          <div className="w-px h-10 shrink-0" style={{ background: divBg }} />
+          <button onClick={onUpgrade}
+            className="shrink-0 text-white rounded-xl cursor-pointer transition-all hover:opacity-90 active:scale-[0.97]"
+            style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 4px 20px rgba(255,45,111,0.4)', fontFamily: "'Barlow Semi Condensed',sans-serif", fontWeight: 800, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '1.1rem', padding: '0.7rem 2rem', whiteSpace: 'nowrap' }}>
+            Nâng lên VIP →
+          </button>
+        </div>
+
       </div>
     </div>
   )
@@ -289,14 +332,14 @@ export default function Vip() {
   }
 
   return (
-    <div className="min-h-screen bg-cream deco-hatch-light">
+    <div className="min-h-screen bg-cream deco-hatch-light overflow-x-hidden">
       {/* Pink accent line — top (same as home) */}
       <div className="pointer-events-none fixed top-0 inset-x-0 h-px z-10" style={{ background: 'linear-gradient(90deg,transparent,#FF2D6F 30%,#FF2D6F 70%,transparent)' }} />
 
       {step !== 'success' && <StickyBar onUpgrade={handleUpgradeClick} />}
 
       {step === 'success' ? (
-        <div className="relative max-w-3xl mx-auto px-4 py-14 md:py-20" style={{ paddingBottom: '6rem' }}>
+        <div className="relative max-w-4xl mx-auto px-4 py-14 md:py-20" style={{ paddingBottom: '6rem' }}>
           <SuccessState orderId={orderId} />
           <p className="text-center text-ink italic text-base mt-12">* Thông tin được bảo mật · Không chia sẻ bên thứ ba</p>
         </div>
@@ -304,7 +347,7 @@ export default function Vip() {
         <>
           {/* ═══ WARNING BANNER ═══ */}
           <div className="w-full px-4 py-2.5 flex justify-center" style={{ background: '#0C0C0F' }}>
-            <div className="flex items-center gap-2.5 px-6 py-2.5 rounded-md w-full max-w-3xl"
+            <div className="flex items-center gap-2.5 px-6 py-2.5 rounded-md w-full max-w-4xl"
               style={{ border: '1.5px dashed rgba(220,38,38,0.7)', background: 'rgba(220,38,38,0.08)' }}>
               <span className="text-red-500 text-lg shrink-0">⚠</span>
               <p className="text-paper font-black tracking-widest uppercase text-center flex-1"
@@ -317,20 +360,25 @@ export default function Vip() {
           {/* ═══ HERO — dark opener ═══ */}
           <div className="relative overflow-hidden" style={{ background: '#0C0C0F', borderBottom: '3px solid #FF2D6F' }}>
             <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle,rgba(255,45,111,0.08) 1px,transparent 1px)', backgroundSize: '28px 28px' }} />
-            <div className="relative max-w-3xl mx-auto px-4 pt-10 pb-10 text-center">
+            <div className="relative max-w-4xl mx-auto px-4 pt-10 pb-10 text-center">
               <p className="sect-label text-accent mb-3">Dành riêng cho anh chị vừa đăng ký</p>
-              <h1 className="text-paper mb-3" style={{ fontSize: 'clamp(2.6rem,7vw,4rem)', lineHeight: 1.05, letterSpacing: '-0.01em' }}>
+              <h1 className="text-paper mb-4" style={{ fontSize: 'clamp(2.8rem,8vw,4.8rem)', lineHeight: 1.02, letterSpacing: '-0.02em' }}>
                 Chúc mừng!{' '}
                 <span className="text-accent">Anh chị đã đăng ký thành công.</span>
               </h1>
-              <p className="text-paper mx-auto" style={{ maxWidth: '480px', fontSize: '1.125rem', lineHeight: 1.7 }}>
-                Đọc hết trang này trước khi đóng — Triết cần nói thêm 1 điều cực kỳ quan trọng với anh chị.
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="h-px flex-1 max-w-16" style={{ background: 'rgba(255,45,111,0.4)' }} />
+                <p className="text-paper/80 font-semibold" style={{ fontSize: '0.8rem', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Đọc trang này trước khi đóng</p>
+                <div className="h-px flex-1 max-w-16" style={{ background: 'rgba(255,45,111,0.4)' }} />
+              </div>
+              <p className="text-paper mx-auto" style={{ maxWidth: '520px', fontSize: '1.15rem', lineHeight: 1.75, opacity: 0.9 }}>
+                Triết cần nói thêm 1 điều cực kỳ quan trọng với anh chị.
               </p>
             </div>
           </div>
 
           {/* ═══ LETTER SECTION — 2 col ═══ */}
-          <div className="max-w-3xl mx-auto px-4 pt-10 pb-8">
+          <div className="max-w-4xl mx-auto px-4 pt-10 pb-8">
             <div className="flex flex-col sm:flex-row gap-8 items-start">
 
               {/* Copy — letter style */}
@@ -362,8 +410,8 @@ export default function Vip() {
               </div>
 
               {/* Photo — sticky on desktop */}
-              <div className="sm:w-48 shrink-0 sm:sticky sm:top-6">
-                <div className="rounded-2xl overflow-hidden shadow-md border border-line">
+              <div className="sm:w-56 shrink-0 sm:sticky sm:top-6">
+                <div className="rounded-2xl overflow-hidden shadow-lg" style={{ border: '2px solid rgba(255,45,111,0.18)', boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 0 0 4px rgba(255,45,111,0.06)' }}>
                   <img src="assets/triet-mona.jpg" alt="Triết — Growth Manager MONA Media" className="w-full object-cover object-top" style={{ aspectRatio: '3/4' }} loading="lazy" />
                 </div>
                 <p className="text-ink text-sm text-center mt-2 font-medium italic">* Triết — Growth Manager<br />MONA Group</p>
@@ -374,7 +422,7 @@ export default function Vip() {
           {/* ═══ DARK STATS STRIP — 5 số ═══ */}
           <div className="relative overflow-hidden" style={{ background: '#0C0C0F' }}>
             <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
-            <div className="relative max-w-3xl mx-auto px-4 py-8">
+            <div className="relative max-w-4xl mx-auto px-4 py-8">
               <p className="sect-label text-accent text-center mb-5">Không phải hứa hẹn — là kết quả thật</p>
               <div className="flex divide-x divide-white/10">
                 {[
@@ -384,13 +432,13 @@ export default function Vip() {
                   { n: '1000',     label: 'E-learning KPI 2026', accent: false },
                   { n: '2 tiếng', label: 'Không giấu bài',  accent: true  },
                 ].map((s) => (
-                  <div key={s.n} className="flex-1 min-w-0 px-2 py-2 text-center">
+                  <div key={s.n} className="flex-1 min-w-0 px-1.5 py-2 text-center overflow-hidden">
                     <div className={`font-black leading-none tabular-nums ${s.accent ? 'text-accent' : 'text-paper'}`}
-                      style={{ fontSize: 'clamp(1.1rem,3.5vw,2.2rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", fontStyle: 'italic' }}>
+                      style={{ fontSize: 'clamp(1.4rem,4vw,2.6rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", fontStyle: 'italic' }}>
                       {s.n}
                     </div>
-                    <div className="text-paper font-semibold uppercase tracking-wider mt-1 whitespace-nowrap"
-                      style={{ fontSize: 'clamp(0.55rem,1.1vw,0.72rem)' }}>
+                    <div className="text-paper font-semibold uppercase tracking-wider mt-1 text-center"
+                      style={{ fontSize: 'clamp(0.6rem,1.3vw,0.75rem)', lineHeight: 1.2 }}>
                       {s.label}
                     </div>
                   </div>
@@ -425,7 +473,7 @@ export default function Vip() {
             return (
               <div className="relative overflow-hidden py-10" style={{ background: '#0C0C0F' }}>
                 <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
-                <div className="relative max-w-3xl mx-auto px-4">
+                <div className="relative max-w-4xl mx-auto px-4">
                   <div className="mb-7">
                     <div className="sect-label text-accent mb-3">Số liệu lấy trực tiếp từ hệ thống GMV của MONA E-Learning · realtime</div>
                     <p className="text-paper" style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", fontWeight: 800, fontStyle: 'italic', textTransform: 'uppercase', fontSize: 'clamp(2rem,4vw,2.8rem)', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
@@ -448,9 +496,9 @@ export default function Vip() {
           })()}
 
           {/* ═══ TRANSITION CALLOUT ═══ */}
-          <div className="max-w-3xl mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto px-4 py-8">
             <div className="rounded-2xl overflow-hidden shadow-md" style={{ background: '#FFFFFF', border: '1px solid #E6E6EA', position: 'relative', zIndex: 1 }}>
-              <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg,#FF2D6F,#D81557)' }} />
+              <div className="h-2 w-full" style={{ background: 'linear-gradient(90deg,#FF2D6F,#D81557)' }} />
               <div className="px-8 py-8">
                 <p className="text-accent font-bold uppercase tracking-widest mb-4" style={{ fontSize: '0.72rem', letterSpacing: '0.18em' }}>Và đây là sự thật</p>
                 <h2 className="text-ink mb-5" style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", fontWeight: 800, fontSize: 'clamp(1.8rem,4.5vw,2.8rem)', lineHeight: 1.1, fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
@@ -467,7 +515,7 @@ export default function Vip() {
           {!expired && <InlineCta onUpgrade={handleUpgradeClick} mm={mm} ss={ss} dark={false} />}
 
           {/* ═══ TRANSITION SECTION ═══ */}
-          <div className="max-w-3xl mx-auto px-4 pt-8 pb-8">
+          <div className="max-w-4xl mx-auto px-4 pt-8 pb-8">
             <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1px solid #E6E6EA', boxShadow: '0 4px 24px rgba(0,0,0,0.07)', position: 'relative', zIndex: 1 }}>
               {/* Image — full width top, extends below to overlap copy */}
               <div className="relative w-full" style={{ height: '260px', marginBottom: '-60px' }}>
@@ -502,13 +550,16 @@ export default function Vip() {
           </div>
 
           {/* ═══ BENEFITS + PROOF — cream bg ═══ */}
-          <div className="max-w-3xl mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto px-4 py-8">
 
             {/* Section label */}
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-1" style={{ background: '#FFE4EC', border: '1px solid rgba(255,45,111,0.25)' }}>
+            <div className="mb-7 flex items-center gap-4">
+              <div className="h-px flex-1" style={{ background: 'linear-gradient(to right, rgba(255,45,111,0.3), transparent)' }} />
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full" style={{ background: '#FFE4EC', border: '1.5px solid rgba(255,45,111,0.3)' }}>
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: '#FF2D6F' }} />
                 <span className="text-accent font-black uppercase" style={{ fontFamily: "'Inter',sans-serif", fontSize: '0.72rem', letterSpacing: '0.2em' }}>Anh chị nhận được</span>
               </div>
+              <div className="h-px flex-1" style={{ background: 'linear-gradient(to left, rgba(255,45,111,0.3), transparent)' }} />
             </div>
 
             {/* Benefits */}
@@ -516,8 +567,8 @@ export default function Vip() {
               {BENEFITS_RICH.map((b) => (
                 <div key={b.num} className="rounded-2xl overflow-hidden"
                   style={b.hot
-                    ? { background: '#0C0C0F', border: '1.5px solid #FF2D6F', boxShadow: '0 4px 24px rgba(255,45,111,0.18)', position: 'relative', zIndex: 1 }
-                    : { background: '#FFFFFF', border: '1px solid #E6E6EA', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'relative', zIndex: 1 }
+                    ? { background: '#0C0C0F', border: '1.5px solid #FF2D6F', borderLeft: '4px solid #FF2D6F', boxShadow: '0 4px 24px rgba(255,45,111,0.18)', position: 'relative', zIndex: 1 }
+                    : { background: '#FFFFFF', border: '1px solid #E6E6EA', borderLeft: '3px solid rgba(14,14,16,0.1)', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'relative', zIndex: 1 }
                   }>
                   <div className="px-6 py-5">
                     {/* Top row: num + emoji + badge + value */}
@@ -566,33 +617,53 @@ export default function Vip() {
             {/* ── Value stack summary ── */}
             <div className="bg-paper rounded-2xl overflow-hidden mb-6" style={{ border: '1px solid #E6E6EA', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
               <div className="px-6 py-5">
-              <div className="space-y-2.5 mb-4">
-                {BENEFITS.map((b) => (
-                  <div key={b.num} className="flex items-center justify-between gap-4" style={{ fontSize: '1rem' }}>
-                    <span className="text-ink font-medium">#{b.num} — {b.title.split('—')[0].trim()}</span>
-                    <span className="text-ink/60 tabular-nums shrink-0 font-semibold line-through">{b.value}</span>
+                <div className="divide-y" style={{ borderColor: '#F0F0F3' }}>
+                  {BENEFITS.map((b) => (
+                    <div key={b.num} className="py-2.5">
+                      {/* #num + price on same row */}
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="font-black italic"
+                          style={{ fontFamily: "'Barlow Semi Condensed',sans-serif", fontSize: '0.82rem', color: 'rgba(255,45,111,0.55)' }}>
+                          #{b.num}
+                        </span>
+                        <span className="tabular-nums font-semibold line-through"
+                          style={{ fontSize: '0.82rem', color: 'rgba(14,14,16,0.38)' }}>
+                          {b.value}
+                        </span>
+                      </div>
+                      {/* Title — full width, no competing with price */}
+                      <p className="text-ink font-semibold leading-snug"
+                        style={{ fontSize: '0.93rem' }}>
+                        {b.title.split('—')[0].trim()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-px bg-line my-4" />
+
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <div className="font-semibold mb-1" style={{ fontSize: '0.82rem', color: 'rgba(14,14,16,0.5)' }}>Tổng giá trị</div>
+                    <div className="font-bold tabular-nums line-through" style={{ fontSize: '1.25rem', color: 'rgba(14,14,16,0.4)' }}>7.000.000đ</div>
                   </div>
-                ))}
-              </div>
-              <div className="h-px bg-line mb-4" />
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-ink/60 font-semibold mb-0.5" style={{ fontSize: '0.85rem' }}>Tổng giá trị</div>
-                  <div className="text-ink/50 font-bold tabular-nums line-through" style={{ fontSize: '1.3rem' }}>7.000.000đ</div>
+                  <div className="text-right">
+                    <div className="font-semibold mb-1" style={{ fontSize: '0.82rem', color: 'rgba(14,14,16,0.5)' }}>Anh chị trả</div>
+                    <div className="text-accent font-black leading-none tabular-nums" style={{ fontSize: 'clamp(2rem,6vw,2.4rem)', fontFamily: "'Barlow Semi Condensed',sans-serif" }}>{VIP_PRICE_DISPLAY}</div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-ink/60 font-semibold mb-0.5" style={{ fontSize: '0.85rem' }}>Anh chị trả</div>
-                  <div className="text-accent font-black leading-none tabular-nums" style={{ fontSize: '2.2rem', fontFamily: "'Barlow Semi Condensed',sans-serif" }}>{VIP_PRICE_DISPLAY}</div>
-                </div>
-              </div>
-              <p className="text-ink/60 mt-3 text-center italic" style={{ fontSize: '0.95rem' }}>* Trả một lần · không phí ẩn · quyền lợi giữ mãi</p>
+
+                <p className="mt-3 text-center italic" style={{ fontSize: '0.88rem', color: 'rgba(14,14,16,0.5)' }}>
+                  * Trả một lần · không phí ẩn · quyền lợi giữ mãi
+                </p>
               </div>
             </div>
 
             {/* ── Triết nói thẳng — callout format ── */}
             <div className="mb-8 rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1px solid #E6E6EA', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
-              <div className="px-6 py-4 border-b border-line" style={{ background: '#0C0C0F' }}>
-                <p className="text-paper font-bold" style={{ fontSize: '0.95rem' }}>Triết nói thẳng —</p>
+              <div className="px-6 py-4 border-b border-line flex items-center gap-3" style={{ background: '#0C0C0F' }}>
+                <div className="w-1 h-5 rounded-full shrink-0" style={{ background: '#FF2D6F' }} />
+                <p className="text-paper font-black uppercase tracking-widest" style={{ fontSize: '0.78rem', letterSpacing: '0.18em' }}>Triết nói thẳng</p>
               </div>
               <div className="px-6 py-6 space-y-4" style={{ background: '#FFFFFF', fontSize: '1.125rem', lineHeight: 1.8 }}>
                 <p className="text-ink">
@@ -624,21 +695,25 @@ export default function Vip() {
             {/* Dots */}
             <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle,rgba(255,45,111,0.10) 1px,transparent 1px)', backgroundSize: '28px 28px' }} />
 
-            <div id="vip-cta" className="relative max-w-3xl mx-auto px-4 pt-10 pb-8" style={{ paddingBottom: '7rem' }}>
-              <p className="text-center text-paper font-semibold mb-2" style={{ fontSize: '1.125rem' }}>Xác nhận nâng VIP — anh chị trả</p>
-              <div className="text-center mb-6">
-                <div className="text-accent font-black leading-none tabular-nums" style={{ fontSize: 'clamp(2.8rem,9vw,4.2rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", fontStyle: 'italic' }}>{VIP_PRICE_DISPLAY}</div>
-                <div className="text-paper/70 mt-2" style={{ fontSize: '1rem' }}>một lần duy nhất · giữ mãi toàn bộ quyền lợi</div>
+            <div id="vip-cta" className="relative max-w-4xl mx-auto px-4 pt-10" style={{ paddingBottom: 'clamp(5rem,12vw,8rem)' }}>
+              <p className="text-center font-bold uppercase tracking-widest mb-3" style={{ fontSize: '0.72rem', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.5)' }}>Xác nhận nâng VIP — anh chị trả</p>
+              <div className="text-center mb-7">
+                <div className="text-accent font-black leading-none tabular-nums" style={{ fontSize: 'clamp(3.2rem,10vw,5rem)', fontFamily: "'Barlow Semi Condensed',sans-serif", fontStyle: 'italic', textShadow: '0 0 60px rgba(255,45,111,0.4)' }}>{VIP_PRICE_DISPLAY}</div>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <div className="h-px w-8" style={{ background: 'rgba(255,255,255,0.2)' }} />
+                  <span className="text-paper/60" style={{ fontSize: '0.88rem' }}>một lần duy nhất · giữ mãi toàn bộ quyền lợi</span>
+                  <div className="h-px w-8" style={{ background: 'rgba(255,255,255,0.2)' }} />
+                </div>
               </div>
 
               {step === 'offer' && !expired && (
                 <>
                   <button
                     onClick={() => setStep('form')}
-                    className="btn-cta w-full text-center text-paper rounded-xl py-4 text-lg transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer mb-3"
-                    style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 8px 32px rgba(255,45,111,0.4)' }}
+                    className="btn-cta w-full text-center text-paper rounded-xl py-4 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer mb-3"
+                    style={{ background: 'linear-gradient(135deg,#FF2D6F 0%,#D81557 100%)', boxShadow: '0 8px 32px rgba(255,45,111,0.4)', fontSize: 'clamp(1rem,4vw,1.125rem)' }}
                   >
-                    Tôi muốn nâng lên VIP — 499k →
+                    Nâng lên VIP — 499k →
                   </button>
                   <p className="text-paper/80 text-center leading-relaxed" style={{ fontSize: '1rem' }}>
                     Bấm → điền thông tin → hệ thống tạo QR · chuyển khoản → bấm xác nhận · hệ thống tự động cấp quyền VIP ngay lập tức.

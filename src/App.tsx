@@ -300,15 +300,17 @@ function useLightbox() {
 const ZALO_URL = import.meta.env.VITE_ZALO_URL || 'https://zalo.me/g/fwtjhqz5bkchcxuontjq'
 
 function SuccessPopup() {
-  const [cd, setCd] = useState(5)
-  const [clicked, setClicked] = useState(false)
+  const [cd, setCd] = useState(20)
+  const [zaloClicked, setZaloClicked] = useState(false)
+  const [vipClicked, setVipClicked] = useState(false)
+  const clicked = vipClicked
 
   useEffect(() => {
-    if (clicked) return
+    if (vipClicked) return
     if (cd === 0) { window.location.href = '/vip'; return }
     const t = setTimeout(() => setCd(c => c - 1), 1000)
     return () => clearTimeout(t)
-  }, [cd, clicked])
+  }, [cd, vipClicked])
 
   return (
     <motion.div
@@ -337,33 +339,52 @@ function SuccessPopup() {
           Tham gia nhóm Zalo để nhận tài liệu và cập nhật mới nhất.
         </p>
 
-        {/* CTA VIP upsell */}
+        {/* CTA Zalo — primary */}
         <a
-          href="/vip"
-          onClick={() => setClicked(true)}
-          className="btn-cta flex items-center justify-center gap-2 w-full text-paper font-bold text-base px-6 py-4 rounded-lg transition shadow-lg shadow-accent/30 hover:opacity-90 hover:scale-[1.01]"
+          href={ZALO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setZaloClicked(true)}
+          className="btn-cta flex items-center justify-center gap-2 w-full text-paper font-bold text-base px-6 py-4 rounded-lg transition shadow-lg shadow-accent/30 hover:opacity-90 hover:scale-[1.01] mb-3"
           style={{background:'#FF2D6F'}}
         >
-          Xem quyền lợi & nhận tài liệu
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-          </svg>
+          Vào nhóm Zalo ngay →
         </a>
 
-        {/* Countdown / After click */}
-        <div className="mt-5 h-10">
-          {clicked ? (
+        {/* CTA VIP — hiện ngay hoặc sau khi click Zalo */}
+        {zaloClicked ? (
+          <a
+            href="/vip"
+            onClick={() => setVipClicked(true)}
+            className="flex items-center justify-center gap-2 w-full font-semibold text-sm px-6 py-3 rounded-lg border transition hover:bg-slate-50"
+            style={{color:'#FF2D6F', borderColor:'#FF2D6F'}}
+          >
+            Xem thêm quyền lợi VIP →
+          </a>
+        ) : (
+          <a
+            href="/vip"
+            onClick={() => setVipClicked(true)}
+            className="block text-center text-slate-400 text-xs hover:text-slate-600 transition"
+          >
+            Xem quyền lợi VIP
+          </a>
+        )}
+
+        {/* Countdown */}
+        <div className="mt-4 h-10">
+          {vipClicked ? (
             <p className="text-slate-400 text-sm">Đang chuyển hướng...</p>
           ) : (
             <div>
-              <p className="text-slate-400 text-xs mb-2">Tự động chuyển hướng sau {cd}s</p>
+              <p className="text-slate-400 text-xs mb-2">Tự động chuyển sang trang VIP sau {cd}s</p>
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full rounded-full"
                   style={{background:'#FF2D6F'}}
                   initial={{width:'100%'}}
                   animate={{width:'0%'}}
-                  transition={{duration:5,ease:'linear'}}
+                  transition={{duration:20,ease:'linear'}}
                 />
               </div>
             </div>
